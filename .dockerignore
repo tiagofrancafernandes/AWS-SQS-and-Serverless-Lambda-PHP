@@ -1,3 +1,4 @@
 build-and-push.sh
 *.log
 *no*commit*
+.env
