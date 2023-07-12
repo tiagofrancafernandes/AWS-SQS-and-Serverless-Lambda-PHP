@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Http;
+
 // $laravelPath = __DIR__ . '/../no-commit-old/laravel-app';
 
 require_once __DIR__ . '/../utils/laravel-core.php';
@@ -14,13 +16,14 @@ function handler(array $event): string
 
         $messageAttributes = $event['Records'][0]['MessageAttributes'] ?? $event['Records'][0]['messageAttributes'] ?? [];
         $perqunteAoGpt = $messageAttributes['perqunte_ao_gpt']['StringValue'] ?? $event['Records'][0]['body'] ?? null;
+        $callbackUrl = $messageAttributes['callback_url']['StringValue'] ?? null;
 
         $response = \App\Services\OpenAI\Client::sendPrompt((string) $perqunteAoGpt);
         $data = $response->json();
         $gptResponseText = $data['choices'][0]['text'] ?? null;
         $gptResponseText = implode(' ', array_filter(array_map('trim', explode(PHP_EOL, (string) $gptResponseText))));
 
-        $urlToCall = 'http://dev-home.tiagofranca.com:8003/webhooks/incoming';
+        $urlToCall = $callbackUrl ?? 'https://catupiry.comptrade.dev/webhooks/incoming' ?? 'http://dev-home.tiagofranca.com:8003/webhooks/incoming';
 
         $clientResponse = Http::withHeaders([
             'Content-Type' => 'application/json; charset=utf-8',
