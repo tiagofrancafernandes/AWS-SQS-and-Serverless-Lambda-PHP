@@ -77,10 +77,27 @@ curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" \
         "SenderId": "123456789012",
         "ApproximateFirstReceiveTimestamp": "1523232000001"
       },
-      "messageAttributes": {
-        "subject":"Assunto rest client",
-        "sleep":4,
-        "e":"eeeh"
+      "MessageAttributes": {
+          "status": {
+              "DataType": "String",
+              "StringValue": "success"
+          },
+          "user_id_type": {
+              "DataType": "String",
+              "StringValue": "email"
+          },
+          "perqunte_ao_gpt": {
+              "DataType": "String",
+              "StringValue": "Qual a cidade mais populosa do Brasil?"
+          },
+          "user_id": {
+              "DataType": "String",
+              "StringValue": "ti@compart.com.br"
+          },
+          "tenant_id": {
+              "DataType": "String",
+              "StringValue": "catupiry"
+          }
       },
       "eventSource": "aws:sqs",
       "eventSourceARN": "arn:aws:sqs:us-east-1:123456789012:MyQueue",
