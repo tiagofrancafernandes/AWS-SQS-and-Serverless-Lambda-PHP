@@ -17,3 +17,8 @@ use Illuminate\Support\Facades\Artisan;
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+Artisan::command('run:temp', function () {
+    (new \App\IOData\DataMutators\Exporters\UserExporter((new App\IOData\DataMutators\Helpers\RequestInfo())))
+        ->debug(false)->runProcess()->getLastRunReturn();
+})->purpose('Run temp script');
