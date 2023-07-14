@@ -109,17 +109,20 @@
         },
         "no_extra_blank_lines": {
             "tokens": [
-                "switch",
-                "case",
-                "default",
-                "use",
-                "throw",
-                "square_brace_block",
-                "return",
+                "attribute",
                 "break",
-                "parenthesis_brace_block",
+                "case",
                 "continue",
-                "extra"
+                "curly_brace_block",
+                "default",
+                "extra",
+                "parenthesis_brace_block",
+                "return",
+                "square_brace_block",
+                "switch",
+                "throw",
+                "use",
+                "use_trait"
             ]
         }
     },
