@@ -1,5 +1,13 @@
 <?php
 
+$clearedStr = fn (string $str, string $replacer = '') => str_replace(
+    [
+        '___', '__', '_',
+    ],
+    $replacer,
+    trim(preg_replace('/[\W]/', '_', trim($str)), '_')
+);
+
 return [
 
     /*
@@ -39,7 +47,7 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            'url' => env('APP_URL') . '/storage',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -52,10 +60,22 @@ return [
             'bucket' => env('AWS_BUCKET'),
             'url' => env('AWS_URL'),
             'endpoint' => env('AWS_ENDPOINT'),
+            // 'endpoint' => env('AWS_ENDPOINT', 'https://minio:9000'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
             'throw' => false,
         ],
 
+        'tmp' => [
+            'driver' => 'local',
+            'root' => ((string) env('TEMP_DIR_BASE_PATH', sys_get_temp_dir())) . '/' .
+                $clearedStr(sprintf('%s-%s', ...[
+                    (string) env('APP_NAME', 'Laravel'),
+                    (string) (env('APP_KEY') ?: 'temp-dir-jhkgjhkgjh'),
+                ]), '-'),
+            'url' => env('APP_URL') . '/tmp_storage',
+            'visibility' => 'public',
+            'throw' => true,
+        ],
     ],
 
     /*
