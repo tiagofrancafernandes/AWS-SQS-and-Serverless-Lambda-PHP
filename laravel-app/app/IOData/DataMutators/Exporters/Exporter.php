@@ -7,7 +7,7 @@ use Illuminate\Support\Fluent;
 use \App\Enums\ExporterStatusEnum;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Filesystem\FilesystemAdapter;
-use App\IOData\DataMutators\Helpers\RequestInfo;
+use App\IOData\DataMutators\RequestInfo\RequestInfo;
 use OpenSpout\Writer\WriterInterface;
 use OpenSpout\Common\Entity\Style\Color;
 use OpenSpout\Common\Entity\Style\Style;

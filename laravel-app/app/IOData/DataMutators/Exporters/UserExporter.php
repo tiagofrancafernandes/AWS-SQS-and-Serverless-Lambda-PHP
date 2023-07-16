@@ -3,9 +3,9 @@
 namespace App\IOData\DataMutators\Exporters;
 
 use Closure;
-use App\Models\User;
+use App\RequestInfo\User;
 use Illuminate\Contracts\Support\Arrayable;
-use App\IOData\DataMutators\Helpers\RequestInfo;
+use App\IOData\DataMutators\RequestInfo\RequestInfo;
 
 class UserExporter extends Exporter
 {
