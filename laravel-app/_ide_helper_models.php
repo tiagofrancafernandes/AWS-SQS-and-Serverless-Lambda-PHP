@@ -12,6 +12,20 @@
 
 namespace App\Models{
 /**
+ * App\Models\ExportRequest
+ *
+ * @property \Illuminate\Database\Eloquent\Casts\AsCollection $mapped_columns
+ * @property \Illuminate\Database\Eloquent\Casts\AsCollection $modifiers
+ * @method static \Database\Factories\ExportRequestFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder|ExportRequest newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|ExportRequest newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|ExportRequest query()
+ */
+	class ExportRequest extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
  * App\Models\User
  *
  * @property int $id
