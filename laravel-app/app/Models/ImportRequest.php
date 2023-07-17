@@ -2,14 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Traits\RequestModelMethods;
+use App\Models\Interfaces\RequestModel;
 use Illuminate\Database\Eloquent\Model;
 use App\IOData\DataMutators\Enums\RequestTypeEnum;
-use App\Models\Interfaces\RequestModel;
-use App\Models\Traits\RequestModelMethods;
-use Illuminate\Database\Eloquent\Casts\AsCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class ExportRequest extends Model implements RequestModel
+class ImportRequest extends Model implements RequestModel
 {
     use HasFactory;
     use RequestModelMethods;
@@ -30,6 +29,8 @@ class ExportRequest extends Model implements RequestModel
         'log',
         'disk_name',
         'was_finished',
+        'import_file_url',
+        'import_file_disk_name',
         'sqs_message_id',
         'sqs_request_info',
         'sqs_message_body',
@@ -48,6 +49,16 @@ class ExportRequest extends Model implements RequestModel
 
     public function requestType(): RequestTypeEnum
     {
-        return RequestTypeEnum::Export;
+        return RequestTypeEnum::Import;
+    }
+
+    public function getImportFileUrl(): ?string
+    {
+        return $this->{'import_file_url'} ?? null;
+    }
+
+    public function getImportFileDiskName(): ?string
+    {
+        return $this->{'import_file_disk_name'} ?? null;
     }
 }
