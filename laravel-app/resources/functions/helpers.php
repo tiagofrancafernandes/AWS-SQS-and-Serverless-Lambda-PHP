@@ -2,6 +2,7 @@
 declare(strict_types = 1);
 
 use App\Helpers\File\FileHelpers;
+use App\Helpers\Strings\StringHelpers;
 
 if (!function_exists('logAndDump')) {
     /**
@@ -13,6 +14,28 @@ if (!function_exists('logAndDump')) {
     function logAndDump(...$content)
     {
         FileHelpers::logAndDump(...$content);
+    }
+}
+
+if (!function_exists('logAndDumpSpf')) {
+    /**
+     * logAndDumpSpf function
+     *
+     *
+    * @param string $firstString
+    * @param float|int|string ...$params
+    *
+    * @return void
+     */
+    function logAndDumpSpf(string $firstString, float|int|string ...$params): void
+    {
+        $params = array_values($params);
+
+        foreach ($params as $key => $item) {
+            $params[$key] = trim(var_export($item, true), "'");
+        }
+
+        FileHelpers::logAndDump(sprintf($firstString, ...$params));
     }
 }
 
@@ -58,7 +81,9 @@ if (!function_exists('relativePath')) {
 
 if (!function_exists('currentFileAndLine')) {
     /**
-     * function currentFileAndLine
+     * currentFileAndLine function
+     *
+     * @param boolean $relativePath
      *
      * @return string
      */
@@ -69,13 +94,37 @@ if (!function_exists('currentFileAndLine')) {
 }
 
 if (!function_exists('testeParams')) {
-    /**
-     * function testeParams
+        /**
+     * formatDebugBacktrace function
      *
-     * @param $type
+     * @param array $trace
+     * @param boolean $relativePath
+     *
+     * @return string
      */
-    function testeParams(mixed $type)
+    function formatDebugBacktrace(array $trace, bool $relativePath = false): string
     {
-        dump($type);
+        return FileHelpers::formatDebugBacktrace($trace, $relativePath);
+    }
+}
+
+if (!function_exists('spf')) {
+
+    /**
+     * spf function  Easy way to use sprintf
+     *
+    *
+    * ```php
+    * spf('aa %s %d', 123, 34); // "aa 123 34"
+    * ```
+    *
+    * @param string $firstString
+    * @param float|int|string ...$params
+    *
+    * @return string
+     */
+    function spf(string $firstString, float|int|string ...$params): string
+    {
+        return StringHelpers::spf($firstString, ...$params);
     }
 }
