@@ -11,6 +11,7 @@
  */
 
 return [
+    'created' => 'created',
     'initialized' => 'initialized',
     'before_run' => 'before_run',
     'before_running' => 'before_running',

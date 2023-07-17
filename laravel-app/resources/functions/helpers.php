@@ -1,4 +1,5 @@
 <?php
+declare(strict_types = 1);
 
 use App\Helpers\File\FileHelpers;
 
@@ -64,5 +65,17 @@ if (!function_exists('currentFileAndLine')) {
     function currentFileAndLine(bool $relativePath = false): string
     {
         return FileHelpers::currentFileAndLine($relativePath);
+    }
+}
+
+if (!function_exists('testeParams')) {
+    /**
+     * function testeParams
+     *
+     * @param $type
+     */
+    function testeParams(mixed $type)
+    {
+        dump($type);
     }
 }

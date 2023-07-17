@@ -6,6 +6,7 @@ use TiagoF2\Enums\Core\Enum;
 
 class ExporterStatusEnum extends Enum
 {
+    const STATUS_CREATED = 05;
     const STATUS_INITIALIZED = 10;
     const STATUS_BEFORE_RUN = 15;
     const STATUS_BEFORE_RUNNING  = 20;
@@ -22,6 +23,7 @@ class ExporterStatusEnum extends Enum
     const HANDLE_FAIL  = 75;
 
     protected static array $enums = [
+        self::STATUS_CREATED => 'created',
         self::STATUS_INITIALIZED => 'initialized',
         self::STATUS_BEFORE_RUN => 'before_run',
         self::STATUS_BEFORE_RUNNING => 'before_running',
