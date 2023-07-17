@@ -71,13 +71,29 @@ class FileHelpers
     }
 
     /**
-     * function currentFileAndLine
+     * currentFileAndLine function
+     *
+     * @param boolean $relativePath
      *
      * @return string
      */
     public static function currentFileAndLine(bool $relativePath = false): string
     {
         $trace = debug_backtrace();
+
+        return static::formatDebugBacktrace($trace, $relativePath);
+    }
+
+    /**
+     * formatDebugBacktrace function
+     *
+     * @param array $trace
+     * @param boolean $relativePath
+     *
+     * @return string
+     */
+    public static function formatDebugBacktrace(array $trace, bool $relativePath = false): string
+    {
         $caller = $trace[1] ?? null;
 
         $file = $caller['file'] ?? null;

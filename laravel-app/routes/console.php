@@ -19,6 +19,13 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Artisan::command('run:temp', function () {
-    (new \App\IOData\DataMutators\Exporters\UserExporter((new App\IOData\DataMutators\Helpers\RequestInfo())))
-        ->debug(false)->runProcess()->getLastRunReturn();
+    dump((new \App\IOData\DataMutators\Exporters\UserExporter(
+        (new \App\IOData\DataMutators\RequestInfo\RequestInfo(
+            $exportRequest = \App\Models\ExportRequest::factory()->createOne()
+        ))
+    ))
+        ->debug(false)->runProcess()->getLastRunReturn());
+
+    // dump($exportRequest->toArray(), $exportRequest?->getFinalFileUrl());
+    dump($exportRequest->{'id'});
 })->purpose('Run temp script');
