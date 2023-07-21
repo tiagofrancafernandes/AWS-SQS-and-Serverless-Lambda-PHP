@@ -21,7 +21,18 @@ Artisan::command('inspire', function () {
 Artisan::command('run:temp', function () {
     dump((new \App\IOData\DataMutators\Exporters\UserExporter(
         (new \App\IOData\DataMutators\RequestInfo\RequestInfo(
-            $exportRequest = \App\Models\ExportRequest::factory()->createOne()
+            $exportRequest = \App\Models\ExportRequest::factory()->createOne([
+                'mapped_columns' => [
+                    'id' => 'ID',
+                    'name' => 'Nome',
+                    'creator' => 'Conta criada por',
+                ],
+                'modifiers' => [
+                    # Demo
+                    // ['where', ['id', '>=', 3335]],
+                    // serialize(['whereIn', ['id', [3335, 3336, 3337]]]),
+                ],
+            ])
         ))
     ))
         ->debug(false)->runProcess()->getLastRunReturn());
