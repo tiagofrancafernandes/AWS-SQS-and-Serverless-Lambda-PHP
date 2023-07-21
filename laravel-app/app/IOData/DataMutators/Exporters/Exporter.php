@@ -683,9 +683,13 @@ abstract class Exporter implements ContractsExporter
         }
 
         foreach ($modifiers as $modifier) {
-            $unserialized = unserialize($modifier);
+            if (!(is_string($modifier) || is_array($modifier))) {
+                throw new \Exception('The modifiers must be an array or serialized array');
+            }
 
-            if (!$unserialized || count($unserialized) != 2) {
+            $unserialized = is_string($modifier) ? unserialize($modifier) : $modifier;
+
+            if (!$unserialized || !is_array($unserialized) || count($unserialized) != 2) {
                 continue;
             }
 

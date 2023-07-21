@@ -28,4 +28,11 @@ Artisan::command('run:temp', function () {
 
     // dump($exportRequest->toArray(), $exportRequest?->getFinalFileUrl());
     dump($exportRequest->{'id'});
+    dump(
+        spf(
+            'ReportUrl: %s | FinalFileUrl: %s',
+            $exportRequest->getReportUrl(),
+            $exportRequest->getFinalFileUrl(),
+        )
+    );
 })->purpose('Run temp script');

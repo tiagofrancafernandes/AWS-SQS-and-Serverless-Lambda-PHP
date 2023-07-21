@@ -27,7 +27,9 @@ class ExportRequestFactory extends Factory
             ],
             'modifiers' => [
                 // serialize(['where', ['id', '=', 2]]),
-                serialize(['whereIn', ['id', [2, 4, 6]]]),
+                // serialize(['whereIn', ['id', [2, 4, 6]]]),
+                serialize(['whereIn', ['id', [3335, 3336, 3337]]]),
+                // ['whereIn', ['id', [3335, 3336, 3337]]],
                 // serialize(['orderBy', ['id', 'desc']]),
                 // serialize(['whereNot', ['id', 3812]]),
             ],
