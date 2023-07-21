@@ -3,7 +3,7 @@
 namespace App\IOData\DataMutators\Exporters;
 
 use Closure;
-use App\RequestInfo\User;
+use App\Models\User;
 use Illuminate\Contracts\Support\Arrayable;
 use App\IOData\DataMutators\RequestInfo\RequestInfo;
 

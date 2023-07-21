@@ -3,29 +3,31 @@
 namespace App\IOData\DataMutators\RequestInfo;
 
 use Illuminate\Support\Carbon;
+use App\Enums\IORequestStatusEnum;
+use App\Models\Interfaces\RequestModel;
+use Illuminate\Support\Facades\Storage;
+use App\IOData\DataMutators\Enums\RequestTypeEnum;
 use App\IOData\DataMutators\Resources\ResourceManager;
 
-/**
- * TODO: virar model?
- */
 class RequestInfo
 {
     protected array $mappedColumns;
     protected string $resourceName;
     protected array $modifiers;
-    protected string $tenantId;
+    protected ?string $tenantId;
 
     public  function __construct(
-        protected ?\App\IOData\DataMutators\Enums\RequestTypeEnum $type,
-        array $mappedColumns,
-        array $modifiers,
-        string $resourceName,
-        string $tenantId,
+        protected RequestModel $requestModel,
     ) {
-        $this->setMappedColumns($mappedColumns);
-        $this->setModifiers($modifiers);
-        $this->setResourceName($resourceName);
-        $this->setTenantId($tenantId);
+        $this->initData();
+    }
+
+    protected function initData()
+    {
+        $this->setMappedColumns($this->requestModel->getMappedColumns()?->toArray());
+        $this->setModifiers($this->requestModel->getModifiers()?->toArray());
+        $this->setResourceName($this->requestModel->getResourceName());
+        $this->setTenantId($this->requestModel->getTenantId());
 
         $this->validateInfo();
     }
@@ -39,9 +41,9 @@ class RequestInfo
     {
         foreach ([
             'type' => $this->getType(),
-            'tenantId' => $this->getTenantId(),
             'resourceName' => $this->getResourceName(),
             'mappedColumns' => $this->getMappedColumns(),
+            'actionProcessor' => $this->getActionProcessor(),
         ] as $param => $value) {
             if (!$value) {
                 throw new \Exception('Invalid "' . $param . '" attribute.');
@@ -49,9 +51,14 @@ class RequestInfo
         }
     }
 
+    public function getTypeEnum(): RequestTypeEnum
+    {
+        return $this->requestModel->requestType();
+    }
+
     public function getType(): ?string
     {
-        return $this->type?->name ?? null;
+        return $this->getTypeEnum()?->value ?? null;
     }
 
     public function getTenantId(): string
@@ -59,7 +66,7 @@ class RequestInfo
         return $this->tenantId ?? '';
     }
 
-    public function setTenantId(string $tenantId): void
+    public function setTenantId(?string $tenantId): void
     {
         $this->tenantId = $tenantId;
     }
@@ -74,10 +81,8 @@ class RequestInfo
         $this->resourceName = $resourceName;
     }
 
-    public function getActionProcessor(): string
+    public function getActionProcessor(): ?string
     {
-        $this->validateInfo();
-
         return ResourceManager::getActionProcessor(
             $this->getResourceName(),
             $this->getType(),
@@ -96,9 +101,9 @@ class RequestInfo
     ): string {
         $items = array_filter(
             [
-                $this->getRequestDate()->format('Y-m-d-His'),
+                $this->getRequestDate()?->format('Y-m-d-His'),
                 $this->getTenantId(),
-                $this->getActionProcessor(),
+                $this->getResourceName(),
                 $this->getType(),
                 ...array_filter($this->getFilters(), fn ($item) => $item && is_string($item) && trim($item)),
             ]
@@ -122,60 +127,111 @@ class RequestInfo
         return $this->mappedColumns ?? [];
     }
 
-    public function getRequestDate(): Carbon
+    public function getRequestDate(): ?Carbon
     {
-        // TODO
-        return \Illuminate\Support\Carbon::parse('2023-07-15 14:25:18');
+        return $this->requestModel?->getRequestDate() ?? null;
     }
 
     public function getModifiers(): array
     {
-        // TODO
-
-        return [
-            // serialize(['where', ['id', '=', 2]]),
-            serialize(['whereIn', ['id', [2, 4, 6]]]),
-            // serialize(['orderBy', ['id', 'desc']]),
-            // serialize(['whereNot', ['id', 3812]]),
-        ];
+        return $this->requestModel?->getModifiers()?->toArray() ?? [];
     }
 
-    public function reportFileUrl(): ?string
-    {
-        // TODO
+    public function setReportFile(
+        string $reportFilePath,
+        string $reportFileDisk,
+    ): mixed {
+        return $this->requestModel?->setReportFile(
+            $reportFilePath,
+            $reportFileDisk,
+        );
+    }
 
-        if (!$this->wasFinished()) {
+    public function getReportFileUrl(): ?string
+    {
+        return $this->requestModel?->getReportUrl() ?? null;
+    }
+
+    public function setFinalFileUrl(
+        string $finalFilePath,
+        string $finalFileDisk,
+    ): mixed {
+        if (!$finalFilePath || !$finalFileDisk) {
             return null;
         }
 
-        return null;
-    }
-
-    public function finalFileUrl(): ?string
-    {
-        // TODO
-
-        if (!$this->wasFinished()) {
-            return null;
+        if (!in_array($finalFileDisk, array_keys(config('filesystems.disks')))) {
+            throw new \Exception('Invalid "finalFileDisk"', 1);
         }
 
-        return null;
+        return $this->updateRequestModel([
+            'final_file_path' => $finalFilePath,
+            'final_file_disk' => $finalFileDisk,
+        ]);
+    }
+
+    public function getFinalFileUrl(): ?string
+    {
+        return $this->requestModel?->getFinalFileUrl() ?? null;
+    }
+
+    public function getRequestModel(): RequestModel
+    {
+        return $this->requestModel;
+    }
+
+    /**
+     * @suppress PHP0418
+     * @see https://docs.devsense.com/pt/vscode/problems#suppress-phpdoc-tag
+     */
+    public function updateRequestModel(array $attributes): mixed
+    {
+        return $this->requestModel?->update($attributes);
+    }
+
+    public function setAsFinished(int $finalStatus): bool
+    {
+        return $this->requestModel?->setAsFinished($finalStatus) ?? false;
+    }
+
+    public function setStatus(int $status): bool
+    {
+        $status = IORequestStatusEnum::get($status) ? $status : null;
+
+        if (!$status) {
+            return false;
+        }
+
+        return $this->updateRequestModel([
+            'status' => $status,
+        ]);
+    }
+
+    public function getStatus(): ?int
+    {
+        return $this->requestModelGet('final_status') ?: $this->requestModelGet('status');
     }
 
     public function wasFinished(): bool
     {
-        // TODO
-        return false;
+        return $this->requestModel?->wasFinished() ?? false;
     }
 
     public function wasFinishedSuccessfully(): ?bool
     {
-        // TODO
-
         if (!$this->wasFinished()) {
             return null;
         }
 
-        return false;
+        return $this->requestModel?->{'was_finished_successfully'} ?? false;
+    }
+
+    public function requestModelGet(?string $key, mixed $defaultValue = null): mixed
+    {
+        if (!$key) {
+            return null;
+        }
+
+        return $this->requestModel?->{$key} ?? $defaultValue ?? null;
     }
 }

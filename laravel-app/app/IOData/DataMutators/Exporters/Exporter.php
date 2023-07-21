@@ -4,17 +4,18 @@ namespace App\IOData\DataMutators\Exporters;
 
 use Closure;
 use Illuminate\Support\Fluent;
-use \App\Enums\ExporterStatusEnum;
+use App\Helpers\File\FileHelpers;
+use OpenSpout\Writer\XLSX\Writer;
+use \App\Enums\IORequestStatusEnum;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Filesystem\FilesystemAdapter;
-use App\IOData\DataMutators\RequestInfo\RequestInfo;
-use OpenSpout\Writer\WriterInterface;
 use OpenSpout\Common\Entity\Style\Color;
 use OpenSpout\Common\Entity\Style\Style;
 use OpenSpout\Common\Entity\Style\Border;
 use Spatie\SimpleExcel\SimpleExcelWriter;
+use Illuminate\Filesystem\FilesystemAdapter;
 use OpenSpout\Common\Entity\Style\BorderPart;
 use OpenSpout\Common\Entity\Style\CellAlignment;
+use App\IOData\DataMutators\RequestInfo\RequestInfo;
 use App\IOData\DataMutators\Concerns\TempStorageSetMethods;
 use App\IOData\DataMutators\Concerns\TargetStorageSetMethods;
 use App\IOData\DataMutators\Contracts\Exporter as ContractsExporter;
@@ -54,7 +55,7 @@ abstract class Exporter implements ContractsExporter
         $this->setTempStorage($tempLocalStorage, $tempFileName);
         $this->setTargetStorage($targetStorage, $targetFileName);
 
-        $this->status = ExporterStatusEnum::STATUS_INITIALIZED;
+        $this->setStatus(IORequestStatusEnum::INITIALIZED, true);
 
         $this->addStep(__METHOD__, date('c'));
 
@@ -97,7 +98,7 @@ abstract class Exporter implements ContractsExporter
             return;
         }
 
-        logAndDump($step); // TODO Ver se ficará mesmo aqui
+        logAndDump([$step, ...$aditionalInfo]); // TODO Ver se ficará mesmo aqui
 
         $step = $aditionalInfo ? [$step, $aditionalInfo] : $step;
 
@@ -132,16 +133,31 @@ abstract class Exporter implements ContractsExporter
 
     public function setStatus(int $status, bool $addToStep = false): void
     {
+        $statusName = IORequestStatusEnum::get($status);
+
         if ($addToStep) {
-            $this->addStep(\App\Enums\ExporterStatusEnum::get($status));
+            $this->addStep(spf('setStatus: %s [%s]', $statusName, $status));
         }
 
-        $this->status = $status;
+        $isAFinalStatus = in_array($status, IORequestStatusEnum::finishedStatusList(), true);
+
+        $setStatusResult = $isAFinalStatus
+            ? $this->requestInfo->setAsFinished($status)
+            : $this->requestInfo->setStatus($status);
+
+        $calledBy = FileHelpers::formatDebugBacktrace(debug_backtrace(), true);
+        logAndDumpSpf(
+            'setStatus: %s | calledBy: %s | isAFinalStatus: %s | setStatusResult: %s',
+            spf($statusName . ' [%s]', $status),
+            $calledBy,
+            var_export($isAFinalStatus, true),
+            var_export($setStatusResult, true),
+        );
     }
 
     public function isFinishedAsSuccess(): bool
     {
-        return $this->getCurrentStatus() === ExporterStatusEnum::STATUS_FINISHED;
+        return $this->getCurrentStatus() === IORequestStatusEnum::FINISHED;
     }
 
     public function debug(bool $debug = true): static
@@ -158,18 +174,22 @@ abstract class Exporter implements ContractsExporter
 
     public function isFinished(): bool
     {
-        return in_array($this->getCurrentStatus(), [
-            ExporterStatusEnum::STATUS_FINISHED,
-            ExporterStatusEnum::STATUS_FINISHED_WITH_FAIL,
-            ExporterStatusEnum::STATUS_FAIL,
-            ExporterStatusEnum::STATUS_CANCELLED,
-            ExporterStatusEnum::HANDLE_FAIL,
-        ], true);
+        return in_array($this->getCurrentStatus(), IORequestStatusEnum::finishedStatusList(), true);
     }
 
     public function setFinished(bool $success = true): void
     {
-        $this->status = $success ? ExporterStatusEnum::STATUS_FINISHED : ExporterStatusEnum::STATUS_FINISHED_WITH_FAIL;
+        logAndDumpSpf('%s | calledBy: %s', __FUNCTION__, formatDebugBacktrace(debug_backtrace(), true));
+
+        if ($this->isFinished()) {
+            return;
+        }
+
+        $finalStatus = $success ? IORequestStatusEnum::FINISHED : IORequestStatusEnum::FINISHED_WITH_FAIL;
+
+        $this->requestInfo?->setAsFinished($finalStatus);
+
+        logAndDumpSpf('finalStatus: %s [%s]', IORequestStatusEnum::get($finalStatus), $finalStatus);
     }
 
     public function getStatus(): int
@@ -177,9 +197,19 @@ abstract class Exporter implements ContractsExporter
         return $this->getCurrentStatus();
     }
 
+    public function getStatusName(): ?string
+    {
+        return $this->getCurrentStatusName();
+    }
+
     public function getCurrentStatus(): int
     {
-        return $this->status ?? ExporterStatusEnum::STATUS_UNDEFINED;
+        return $this->requestInfo?->getStatus() ?? IORequestStatusEnum::UNDEFINED;
+    }
+
+    public function getCurrentStatusName(): ?string
+    {
+        return IORequestStatusEnum::get($this->getCurrentStatus());
     }
 
     protected function run(): ?bool
@@ -215,11 +245,11 @@ abstract class Exporter implements ContractsExporter
          * before start
          */
         $this->addStep('before', date('c'));
-        $this->setStatus(ExporterStatusEnum::STATUS_BEFORE_RUN, true);
+        $this->setStatus(IORequestStatusEnum::BEFORE_BEFORE_STEP_RUN, true);
         $this->beforeResult = $this->runStep(
             fn () => $this->before(),
-            beforeRunStatus: ExporterStatusEnum::STATUS_BEFORE_RUNNING,
-            errorStatus: ExporterStatusEnum::STATUS_FINISHED_WITH_FAIL,
+            beforeRunStatus: IORequestStatusEnum::BEFORE_STEP_RUNNING,
+            errorStatus: IORequestStatusEnum::FINISHED_WITH_FAIL,
         );
 
         if ($this->isFinished()) {
@@ -256,9 +286,9 @@ abstract class Exporter implements ContractsExporter
 
         $this->handleResult = $this->runStep(
             fn () => $this->handle(),
-            beforeRunStatus: ExporterStatusEnum::HANDLE_BEFORE,
-            successStatus: ExporterStatusEnum::HANDLE_SUCCESS,
-            errorStatus: ExporterStatusEnum::HANDLE_FAIL,
+            beforeRunStatus: IORequestStatusEnum::HANDLE_BEFORE,
+            successStatus: IORequestStatusEnum::HANDLE_SUCCESS,
+            errorStatus: IORequestStatusEnum::HANDLE_FAIL,
         );
 
         if ($this->isFinished()) {
@@ -283,17 +313,18 @@ abstract class Exporter implements ContractsExporter
          * handle end
          */
 
-        $this->handledSuccessfully = $this->getStatus() === ExporterStatusEnum::HANDLE_SUCCESS;
+        logAndDumpSpf('getStatus: %s', var_export($this->getStatus(), true));
+        $this->handledSuccessfully = $this->getStatus() === IORequestStatusEnum::HANDLE_SUCCESS;
 
         /**
          * after start
          */
         $this->addStep('after', date('c'));
-        $this->setStatus(ExporterStatusEnum::STATUS_AFTER_RUN, true);
+        $this->setStatus(IORequestStatusEnum::BEFORE_AFTER_STEP_RUN, true);
         $this->afterResult = $this->runStep(
             fn () => $this->after(),
-            beforeRunStatus: ExporterStatusEnum::STATUS_AFTER_RUNNING,
-            errorStatus: ExporterStatusEnum::HANDLE_FAIL,
+            beforeRunStatus: IORequestStatusEnum::AFTER_STEP_RUNNING,
+            errorStatus: IORequestStatusEnum::HANDLE_FAIL,
         );
 
         if ($this->isFinished()) {
@@ -318,7 +349,19 @@ abstract class Exporter implements ContractsExporter
          * after end
          */
 
-        $this->setFinished(true);
+         if (!$this->isFinished()) {
+            logAndDumpSpf(
+                'Setting as finished with status: %s [%s]',
+                $this->getCurrentStatusName(),
+                $this->getCurrentStatus()
+            );
+
+            // Se deve fechar como sucesso ou falha
+            $this->setFinished(
+                $this->getCurrentStatus() &&
+                    !in_array($this->getCurrentStatus(), IORequestStatusEnum::notSuccessStatusList(), true)
+            );
+        }
 
         $this->pushRunReturn([
             'success' => $this->isFinishedAsSuccess(),
@@ -341,6 +384,14 @@ abstract class Exporter implements ContractsExporter
             }
 
             $result = $callable();
+
+            if (is_bool($result) && ($result === false) && $errorStatus) {
+                $this->setStatus($errorStatus, true);
+
+                return $result;
+            }
+
+            $successStatus = $successStatus ?: IORequestStatusEnum::GENERIC_SUCCESS;
 
             if ($successStatus) {
                 $this->setStatus($successStatus, true);
@@ -657,11 +708,11 @@ abstract class Exporter implements ContractsExporter
 
             $params = $unserialized[1] ?? null;
 
-            if (!$params || !is_array($params) || !array_values($params)) {
-                return null;
-            }
+            $params = is_array($params) && array_values($params) ? array_values($params) : null;
 
-            $params = array_values($params);
+            if (!$params) {
+                return $query;
+            }
 
             $query = $query->{$method}(...$params);
         }
@@ -731,7 +782,7 @@ abstract class Exporter implements ContractsExporter
 
         $this->fileExcelWriter = SimpleExcelWriter::create(
             $this->getTempFileFullPath(),
-            configureWriter: function (WriterInterface $writer) {
+            configureWriter: function (Writer $writer) {
                 $options = $writer->getOptions();
                 $options->DEFAULT_COLUMN_WIDTH = 20; // set default width
                 $options->DEFAULT_ROW_HEIGHT = 15; // set default height
@@ -795,6 +846,13 @@ abstract class Exporter implements ContractsExporter
             file_get_contents($this->fileExcelWriter?->getPath())
             // file_get_contents($this->getTempFileFullPath())
         );
+
+        if ($this->getTargetStorage()?->exists($finalPathToSave)) {
+            $this->requestInfo?->setFinalFileUrl(
+                $finalPathToSave,
+                config('import-export.export.target_disk') ?? ''
+            );
+        }
 
         logAndDump('Removing temp file...');
 
