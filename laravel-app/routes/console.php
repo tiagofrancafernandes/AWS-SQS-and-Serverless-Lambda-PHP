@@ -31,6 +31,7 @@ Artisan::command('run:temp', function () {
                     # Demo
                     // ['where', ['id', '>=', 3335]],
                     // serialize(['whereIn', ['id', [3335, 3336, 3337]]]),
+                    serialize(['whereIn', ['id', [3335, 3336, 3337]]]),
                 ],
             ])
         ))

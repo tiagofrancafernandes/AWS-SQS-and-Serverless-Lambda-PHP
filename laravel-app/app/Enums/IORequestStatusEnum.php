@@ -12,6 +12,7 @@ class IORequestStatusEnum extends Enum
     const BEFORE_STEP_RUNNING = 20;
     const BEFORE_AFTER_STEP_RUN = 25;
     const AFTER_STEP_RUNNING = 30;
+    const AFTER_STEP_DONE = 31;
     const FINISHED = 35;
     const FINISHED_WITH_FAIL = 40;
     const FAIL = 45;
@@ -30,6 +31,7 @@ class IORequestStatusEnum extends Enum
         self::BEFORE_STEP_RUNNING => 'BEFORE_STEP_RUNNING',
         self::BEFORE_AFTER_STEP_RUN => 'BEFORE_AFTER_STEP_RUN',
         self::AFTER_STEP_RUNNING => 'AFTER_STEP_RUNNING',
+        self::AFTER_STEP_DONE => 'AFTER_STEP_DONE',
         self::FINISHED => 'FINISHED',
         self::FINISHED_WITH_FAIL => 'FINISHED_WITH_FAIL',
         self::FAIL => 'FAIL',

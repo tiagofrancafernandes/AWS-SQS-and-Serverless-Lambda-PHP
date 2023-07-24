@@ -325,6 +325,7 @@ abstract class Exporter implements ContractsExporter
             fn () => $this->after(),
             beforeRunStatus: IORequestStatusEnum::AFTER_STEP_RUNNING,
             errorStatus: IORequestStatusEnum::HANDLE_FAIL,
+            successStatus: IORequestStatusEnum::AFTER_STEP_DONE,
         );
 
         if ($this->isFinished()) {
@@ -399,8 +400,6 @@ abstract class Exporter implements ContractsExporter
 
             return $result;
         } catch (\Throwable $th) {
-            \Log::error($th);
-
             if ($errorStatus) {
                 $this->setStatus($errorStatus, true);
             }

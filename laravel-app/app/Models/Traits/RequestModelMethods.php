@@ -233,4 +233,25 @@ trait RequestModelMethods
             'report_file_disk' => $reportFileDisk,
         ]);
     }
+
+    public function getStatusNameAttribute()
+    {
+        $status = $this->{'final_status'} ?? $this->{'status'} ?? null;
+
+        if (!$status) {
+            return null;
+        }
+
+        return IORequestStatusEnum::get($status);
+    }
+
+    public function getRequestTypeEnumAttribute()
+    {
+        return $this->{'requestType'}() ?? null;
+    }
+
+    public function getRequestTypeAttribute()
+    {
+        return ($this->{'requestType'}() ?? null)?->name ?? null;
+    }
 }

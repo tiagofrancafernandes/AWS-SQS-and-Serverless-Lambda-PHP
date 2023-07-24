@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\IORequestStatusEnum;
 use Illuminate\Database\Eloquent\Model;
 use App\IOData\DataMutators\Enums\RequestTypeEnum;
 use App\Models\Interfaces\RequestModel;
@@ -34,6 +35,8 @@ class ExportRequest extends Model implements RequestModel
         'sqs_request_info',
         'sqs_message_body',
         'sqs_message_attributes',
+        'user_id_type',
+        'user_id',
     ];
 
     protected $casts = [
@@ -44,6 +47,12 @@ class ExportRequest extends Model implements RequestModel
         'was_finished' => 'boolean',
         'sqs_request_info' => AsCollection::class,
         'sqs_message_attributes' => AsCollection::class,
+    ];
+
+    protected $appends = [
+        'statusName',
+        'requestType',
+        'requestTypeEnum',
     ];
 
     public function requestType(): RequestTypeEnum

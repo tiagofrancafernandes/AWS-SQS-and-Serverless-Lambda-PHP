@@ -44,6 +44,8 @@ class ExportRequestFactory extends Factory
             'log' => null,
             'disk_name' => null,
             'was_finished' => false,
+            'user_id_type' => null,
+            'user_id' => null,
         ];
     }
 }

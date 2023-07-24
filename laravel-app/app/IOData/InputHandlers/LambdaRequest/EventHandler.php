@@ -2,20 +2,26 @@
 
 namespace App\IOData\InputHandlers\LambdaRequest;
 
+use App\Enums\IORequestStatusEnum;
+use App\Models\ExportRequest;
+use App\Models\ImportRequest;
+use Illuminate\Support\Fluent;
 use Illuminate\Support\Collection;
 use App\Helpers\Array\ArrayHelpers;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Client\PendingRequest;
+use App\IOData\DataMutators\RequestInfo\RequestInfo;
 use App\IOData\DataMutators\Resources\ResourceManager;
 
 class EventHandler
 {
-    public function __construct(
-        protected array $event
-    ) {
-        //
+    protected Fluent $event;
+
+    public function __construct(array $event)
+    {
+        $this->event = new Fluent($event ?? []);
     }
 
     public function getRecords(): Collection
@@ -87,13 +93,29 @@ class EventHandler
             return collect($validatedData);
         }
 
-        $success = true; // TODO
+        $processResult = $this->startProcess(
+            $validatedData['validated'] ?? [],
+            $recordData,
+            config('import-export.lambda_process.throw_on_lambda_process'),
+        );
 
-        $clientResponse = $this->callbackToRequester(collect($validatedData['validated'] ?? null));
+        $processRecordReturnData['processResult'] = $processResult;
+        $wasFinishedSuccessfully = $processResult['was_finished_successfully'] ?? null;
+
+        $success = $wasFinishedSuccessfully ?? $processResult['last_run_return']['success'] ?? false;
+
+        $processRecordReturnData['success'] = $success;
+
+        $clientResponse = $this->callbackToRequester(
+            collect(array_merge($validatedData['validated'] ?? [], [
+                'processResult' => $processResult,
+                'success' => $success,
+            ]))
+        );
 
         if ($clientResponse) {
-            $processRecordReturnData['clientResponse']['ok'] = $clientResponse->ok();
-            $processRecordReturnData['clientResponse']['body'] = $clientResponse->json();
+            $processRecordReturnData['clientResponse']['ok'] = $clientResponse?->ok() ?? null;
+            $processRecordReturnData['clientResponse']['body'] = $clientResponse?->json() ?? null;
         }
 
         return collect($processRecordReturnData ?? []);
@@ -136,12 +158,22 @@ class EventHandler
         }
     }
 
-    protected function callbackToRequester(Collection $data, bool $throw = false): null|PendingRequest|Response
-    {
+    protected function callbackToRequester(
+        Collection $data,
+        bool $throw = false,
+    ): null|PendingRequest|Response {
         try {
             $success = $data->get('success', null);
             $requestType = $data->get('requestType');
             $callbackUrl = $data->get('callbackUrl');
+            $userIdType = $data?->get('user_id_type');
+            $userId = $data?->get('user_id');
+            $tenantId = $data?->get('tenant_id');
+            $resource = $data?->get('resource');
+            $mappedColumns = $data?->get('mappedColumns');
+            $modifiers = $data?->get('modifiers');
+
+            $processResult = new Fluent($data->get('processResult', []));
 
             if (
                 !is_bool($success)
@@ -165,32 +197,37 @@ class EventHandler
 
             $translatedType = $types[$requestType] ?? 'importação/exportação';
 
+            $hasReport = boolval($processResult?->report_url);
+            $successBody = $hasReport ? 'import-export.success_body_with_report' : 'import-export.success_body';
+            $failBody = $hasReport ? 'import-export.fail_body_with_report' : 'import-export.fail_body';
+
             $messageTitle = $success
                 ? __('import-export.success_title', ['type' => $translatedType], 'pt_BR')
                 : __('import-export.fail_title', ['type' => $translatedType], 'pt_BR');
 
             $messageBody = $success
-                ? __('import-export.success_body', ['type' => $translatedType], 'pt_BR')
-                : __('import-export.fail_body', ['type' => $translatedType], 'pt_BR');
+                ? __($successBody, ['type' => $translatedType], 'pt_BR')
+                : __($failBody, ['type' => $translatedType], 'pt_BR');
+
             return Http::withHeaders([
                 'Content-Type' => 'application/json; charset=utf-8',
             ])->asJson()->post($callbackUrl, [
                 'MessageAttributes' => [
-                    'status' => [
+                    'success' => [
                         'DataType' => 'String',
                         'StringValue' => var_export($success, true)
                     ],
                     'user_id_type' => [
                         'DataType' => 'String',
-                        'StringValue' => 'email'
+                        'StringValue' => $userIdType
                     ],
                     'user_id' => [
                         'DataType' => 'String',
-                        'StringValue' => 'ti@compart.com.br'
+                        'StringValue' => $userId
                     ],
                     'tenant_id' => [
                         'DataType' => 'String',
-                        'StringValue' => 'catupiry'
+                        'StringValue' => $tenantId
                     ],
                     'messageBody' => [
                         'DataType' => 'String',
@@ -204,13 +241,17 @@ class EventHandler
                         'DataType' => 'String',
                         'StringValue' => $requestType,
                     ],
+                    'resource' => [
+                        'DataType' => 'String',
+                        'StringValue' => $resource,
+                    ],
                     'reportFileUrl' => [
                         'DataType' => 'String',
-                        'StringValue' => 'http://google.com#reportFileUrl'
+                        'StringValue' => $processResult?->report_url,
                     ],
                     'exportFileUrl' => [
                         'DataType' => 'String',
-                        'StringValue' => 'http://google.com#exportFileUrl'
+                        'StringValue' => $processResult?->final_file_url
                     ]
                 ]
             ]);
@@ -222,6 +263,118 @@ class EventHandler
             }
 
             return null;
+        }
+    }
+
+    protected function startProcess(
+        ?array $data,
+        ?Collection $recordData = null,
+        bool $throw = false
+    ): ?array {
+        $toReturn = [
+            'errors' => [],
+        ];
+
+        try {
+            if (!$data) {
+                $toReturn['errors'][] = 'Invalid "data"';
+
+                return $toReturn;
+            }
+
+            $data = new Fluent($data);
+
+            $invalidItems = array_keys(
+                array_filter([
+                    'resource' => !$data?->resource,
+                    'requestType' => !$data?->requestType,
+                    'requestType' => !$data?->requestType,
+                    'user_id_type' => !$data?->user_id_type,
+                    'user_id' => !$data?->user_id,
+                    'mappedColumns' => !$data?->mappedColumns,
+                    // 'tenant_id' => !$data?->tenant_id,
+                    // 'modifiers' => !$data?->modifiers,
+                ])
+            );
+
+            if ($invalidItems) {
+                $toReturn['errors'][] = 'Invalid items: ' . implode(',', $invalidItems);
+
+                return $toReturn;
+            }
+
+            $resourceMutator = ResourceManager::getActionProcessor($data?->resource, $data?->requestType);
+
+            if (!$resourceMutator) {
+                $toReturn['errors'][] = 'Invalid "resourceMutator"';
+
+                return $toReturn;
+            }
+
+            $sqsMessageId = $recordData->get('messageId');
+            $sqsMessageBody = $recordData->get('body');
+            $sqsRequestInfo = $recordData->get('attributes');
+            $messageAttributes = $recordData->get('MessageAttributes') ?? $recordData->get('messageAttributes') ?? null;
+
+            $requestModelData = [
+                'resource_name' => $data?->resource,
+                'tenant_id' => $data?->tenant_id,
+                'mapped_columns' => $data?->mappedColumns,
+                'modifiers' => $data?->modifiers,
+                'request_date' => now(),
+                'status' => IORequestStatusEnum::CREATED,
+                'user_id_type' => $data?->user_id_type,
+                'user_id' => $data?->user_id,
+                'sqs_message_id' => $sqsMessageId,
+                'sqs_message_body' => $sqsMessageBody,
+                'sqs_request_info' => $sqsRequestInfo,
+                'sqs_message_attributes' => $messageAttributes,
+            ];
+
+            if ($data?->requestType === 'import') {
+                $toReturn['errors'][] = '"import" ainda não está habilitado';
+
+                return $toReturn;
+            }
+
+            $requestModel = $data?->requestType === 'import'
+                ? ImportRequest::factory()->createOne(array_merge($requestModelData, [
+                    'import_file_url' => null, // TODO
+                    'import_file_disk_name' => null, // TODO
+                ]))
+                : ExportRequest::factory()->createOne($requestModelData);
+
+            $toReturn['request_Model_id'] = $requestModel->{'id'} ?? null;
+
+            $mutatorInstance = new $resourceMutator(new RequestInfo($requestModel));
+
+            if (!$mutatorInstance) {
+                $toReturn['errors'][] = 'Fail to get "mutatorInstance"';
+
+                return $toReturn;
+            }
+
+            $debugMode = true; // TODO
+            $mutatorInstance
+                ->debug($debugMode)
+                ->runProcess();
+
+            $toReturn['last_run_return'] = $mutatorInstance?->getLastRunReturn();
+            $toReturn['was_finished_successfully'] = $requestModel?->{'was_finished_successfully'} ?? null;
+            $toReturn['final_file_url'] = $requestModel->getFinalFileUrl();
+            $toReturn['report_url'] = $requestModel->getReportUrl();
+
+            return $toReturn ?? [];
+        } catch (\Throwable $th) {
+            \Log::error($th);
+
+            if ($throw) {
+                throw $th;
+            }
+
+            $toReturn['errors'][] = $th->getMessage();
+
+            return $toReturn;
         }
     }
 }
