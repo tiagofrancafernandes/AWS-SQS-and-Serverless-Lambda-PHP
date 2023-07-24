@@ -1,0 +1,11 @@
+{
+    "recommendations": [
+        "georgykurian.laravel-ide-helper",
+        "mikestead.dotenv",
+        "sleistner.vscode-fileutils",
+        "bmewburn.vscode-intelephense-client",
+        "msamgan.laravel-pint-vscode",
+        "lacroixdavid1.vscode-format-context-menu",
+        "editorconfig.editorconfig"
+    ]
+}

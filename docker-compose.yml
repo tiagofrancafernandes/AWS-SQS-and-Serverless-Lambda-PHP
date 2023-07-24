@@ -17,6 +17,12 @@ services:
             - .:/var/task:cached
             - .docker-data/bash_users/root:/root:cached
 
-        ## É o equivalente a 'CMD' no Dockerfile
+            ## <
+            ## Para usar função anonima
+            ## Demo: php-app/lambdaRunnerFileClosureMode.php
+            # - ./.docker-data/custom-runtime/bootstrap-using-closure:/var/runtime/bootstrap:cached
+            ## />
+
+        ## 'command' é o equivalente a 'CMD' no Dockerfile
         ## Caso vazio, executará o que está definido no CMD do Dockerfile
         command: ${LAMBDA_HANDLER_FUNCTION}

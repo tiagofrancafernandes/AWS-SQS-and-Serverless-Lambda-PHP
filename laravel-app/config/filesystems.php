@@ -1,5 +1,13 @@
 <?php
 
+$clearedStr = fn (string $str, string $replacer = '') => str_replace(
+    [
+        '___', '__', '_',
+    ],
+    $replacer,
+    trim(preg_replace('/[\W]/', '_', trim($str)), '_')
+);
+
 return [
 
     /*
@@ -39,7 +47,7 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            'url' => env('APP_URL') . '/storage',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -52,10 +60,54 @@ return [
             'bucket' => env('AWS_BUCKET'),
             'url' => env('AWS_URL'),
             'endpoint' => env('AWS_ENDPOINT'),
+            // 'endpoint' => env('AWS_ENDPOINT', 'https://minio:9000'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
             'throw' => false,
         ],
 
+        'import-export' => [
+            'driver' => 's3',
+            'key' => env('AWS_ACCESS_KEY_ID_IMPORT_EXPORT'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY_IMPORT_EXPORT'),
+            'region' => env('AWS_DEFAULT_REGION_IMPORT_EXPORT'),
+            'bucket' => env('AWS_BUCKET_IMPORT_EXPORT'),
+            'url' => env('AWS_URL_IMPORT_EXPORT'),
+            'endpoint' => env('AWS_ENDPOINT_IMPORT_EXPORT'),
+            // 'endpoint' => env('AWS_ENDPOINT_IMPORT_EXPORT', 'https://minio:9000'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT_IMPORT_EXPORT', false),
+            'throw' => (bool) env('AWS_BUCKET_IMPORT_EXPORT_THROW', false),
+        ],
+
+        'import' => [
+            'driver' => 'scoped',
+            'disk' => 'import-export',
+            'prefix' => 'import-files', // path/to/dir
+        ],
+
+        'export' => [
+            'driver' => 'scoped',
+            'disk' => 'import-export',
+            'prefix' => 'export-files', // path/to/dir
+        ],
+
+        'ie_report' => [
+            'driver' => 'scoped',
+            'disk' => 'import-export',
+            'prefix' => 'report-files', // path/to/dir
+            'throw' => (bool) env('AWS_BUCKET_IMPORT_EXPORT_THROW', false),
+        ],
+
+        'tmp' => [
+            'driver' => 'local',
+            'root' => ((string) env('TEMP_DIR_BASE_PATH', sys_get_temp_dir())) . '/' .
+                $clearedStr(sprintf('%s-%s', ...[
+                    (string) env('APP_NAME', 'Laravel'),
+                    (string) (env('APP_KEY') ?: 'temp-dir-jhkgjhkgjh'),
+                ]), '-'),
+            'url' => env('APP_URL') . '/tmp_storage',
+            'visibility' => 'public',
+            'throw' => true,
+        ],
     ],
 
     /*

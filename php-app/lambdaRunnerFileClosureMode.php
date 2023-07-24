@@ -8,59 +8,8 @@ use App\IOData\InputHandlers\LambdaRequest\EventHandler;
 
 require_once __DIR__ . '/../utils/laravel-core.php';
 
-function handler(array $event): string
-{
-    try {
-        echo __FILE__ . ':' . __LINE__ . PHP_EOL;
-        echo __FUNCTION__ . PHP_EOL;
 
-        $eventHandler = new EventHandler($event);
-
-        $records = $eventHandler?->getRecords();
-
-        $returnData = [
-            'recordsCount' => count($records),
-            'failCount' => 0,
-            'successCount' => 0,
-        ];
-
-        foreach ($records as $recordData) {
-            // file_put_contents(
-            //     __DIR__ . '/../no-commit-old/copy-of-bootstrap',
-            //     file_get_contents('/var/runtime/bootstrap')
-            // );
-
-            $processRecordReturnData = $eventHandler->processRecord(collect($recordData));
-
-            if ($processRecordReturnData['fail'] ?? null) {
-                $returnData['failCount'] = intval($returnData['failCount'] ?? 0) + 1;
-            }
-
-            if ($processRecordReturnData['success'] ?? null) {
-                $returnData['successCount'] = intval($returnData['successCount'] ?? 0) + 1;
-            }
-
-            $returnData['recordsReturn'][] = $processRecordReturnData;
-        }
-    } catch (\Throwable $th) {
-        throw $th;
-    }
-
-    return jsonResponse(
-        array_merge(
-            $returnData,
-            [
-                '__FILE__' => __FILE__ . ':' . __LINE__,
-                '__FUNCTION__' => __FUNCTION__,
-                'app_name' => env('APP_NAME'),
-                'php_version' => PHP_VERSION,
-                'event' => $event,
-            ]
-        )
-    );
-}
-
-function jsonResponse(array|string $body, int $status = 200, bool $bodyIsJson = false): string
+$jsonResponse = function(array|string $body, int $status = 200, bool $bodyIsJson = false): string
 {
     $bodyIsJson = is_string($body) && $bodyIsJson;
 
@@ -77,4 +26,52 @@ function jsonResponse(array|string $body, int $status = 200, bool $bodyIsJson = 
         'headers' => $headers,
         'body' => $bodyIsJson ? json_decode($body) : $body,
     ], 64);
-}
+};
+
+$handler = function(array $event) use($jsonResponse) : string
+{
+    try {
+        echo __FILE__ . ':' . __LINE__ . PHP_EOL;
+        echo __FUNCTION__ . PHP_EOL;
+
+        $eventHandler = new EventHandler($event);
+
+        $records = $eventHandler?->getRecords();
+
+        $returnData = [
+            'recordsCount' => count($records),
+            'failCount' => 0,
+            'successCount' => 0,
+        ];
+
+        foreach ($records as $recordData) {
+            // WIP
+            $processRecordReturnData = $eventHandler->processRecord(collect($recordData));
+
+            if ($processRecordReturnData['fail'] ?? null) {
+                $returnData['failCount'] = intval($returnData['failCount'] ?? 0) + 1;
+            }
+
+            if ($processRecordReturnData['success'] ?? null) {
+                $returnData['successCount'] = intval($returnData['successCount'] ?? 0) + 1;
+            }
+
+            $returnData['recordsReturn'][] = $processRecordReturnData;
+        }
+    } catch (\Throwable $th) {
+        throw $th;
+    }
+
+    return $jsonResponse(
+        array_merge(
+            $returnData,
+            [
+                '__FILE__' => __FILE__ . ':' . __LINE__,
+                '__FUNCTION__' => __FUNCTION__,
+                'app_name' => env('APP_NAME'),
+                'php_version' => PHP_VERSION,
+                'event' => $event,
+            ]
+        )
+    );
+};
