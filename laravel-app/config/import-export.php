@@ -15,4 +15,13 @@ return [
     'import' => [
         //
     ],
+    'lambda_process' => [
+        'throw_on_error_level' => intval(
+            env('IMPORT_EXPORT_THROW_ON_LAMBDA_PROCESS_ERROR_LEVEL', 'critical')
+        ),
+
+        'throw_on_lambda_process' => boolval(
+            env('IMPORT_EXPORT_THROW_ON_LAMBDA_PROCESS', false)
+        ),
+    ],
 ];

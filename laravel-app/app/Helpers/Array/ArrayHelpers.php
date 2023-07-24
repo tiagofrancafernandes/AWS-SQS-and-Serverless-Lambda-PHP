@@ -133,4 +133,77 @@ class ArrayHelpers
 
         return $first ?? null;
     }
+
+    /**
+     * get function
+     *
+     * @param array $data
+     * @param string $key
+     * @param mixed $defaultValue
+     * @return mixed
+     */
+    public static function get(array $data, string $key, mixed $defaultValue = null): mixed
+    {
+        return $data[$key] ?? $defaultValue ?? null;
+    }
+
+    /**
+     * stringToArray function
+     *
+     * @param string|null $data
+     * @param string $decoder  `'unserialize', 'json_decode', 'unserialize|json_decode', 'json_decode|unserialize'`
+     * @param boolean $throw
+     *
+     * @return array
+     */
+    public static function stringToArray(
+        ?string $data,
+        string $decoder = 'json_decode|unserialize',
+        bool $throw = false
+    ): array {
+        try {
+            $data = trim((string) $data);
+
+            $allowedDecoders = [
+                'unserialize',
+                'json_decode',
+                'unserialize|json_decode',
+                'json_decode|unserialize',
+            ];
+
+            if (!$decoder || !in_array($decoder, $allowedDecoders, true)) {
+                if ($throw) {
+                    throw new \Exception(
+                        spf(
+                            'Invalid "decoder" param. Valid values: [%s]',
+                            implode(',', $allowedDecoders),
+                        ),
+                        1
+                    );
+                }
+
+                return [];
+            }
+
+            if (!$data) {
+                return [];
+            }
+
+            return (array) match ($decoder) {
+                'unserialize' => unserialize($data),
+                'json_decode' => json_decode($data, true),
+                'unserialize|json_decode' => unserialize($data) ?: json_decode($data, true),
+                'json_decode|unserialize' => json_decode($data, true) ?: unserialize($data),
+                default => (array) $data,
+            };
+        } catch (\Throwable $th) {
+            if ($throw) {
+                throw $th;
+            }
+
+            \Log::error($th);
+
+            return [];
+        }
+    }
 }
