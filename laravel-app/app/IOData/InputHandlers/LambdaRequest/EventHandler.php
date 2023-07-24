@@ -215,7 +215,15 @@ class EventHandler
                 'MessageAttributes' => [
                     'success' => [
                         'DataType' => 'String',
-                        'StringValue' => var_export($success, true)
+                        'StringValue' => $success
+                    ],
+                    'finished_successfully' => [
+                        'DataType' => 'String',
+                        'StringValue' => boolval($processResult?->was_finished_successfully)
+                    ],
+                    'status' => [
+                        'DataType' => 'String',
+                        'StringValue' => intval($processResult['last_run_return']['status'] ?? null) ?: null,
                     ],
                     'user_id_type' => [
                         'DataType' => 'String',

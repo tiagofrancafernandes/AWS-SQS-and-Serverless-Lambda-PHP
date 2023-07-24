@@ -81,7 +81,7 @@ trait RequestModelMethods
                 return $this->getFinalFileStorage()
                     ->temporaryUrl(
                         $reportFilePath,
-                        now()->addDays(5),
+                        now()->addDays(7),
                         $options
                     );
             }
@@ -142,7 +142,7 @@ trait RequestModelMethods
                 return $this->getFinalFileStorage()
                     ->temporaryUrl(
                         $finalFilePath,
-                        now()->addDays(5),
+                        now()->addDays(7),
                         $options
                     );
             }
