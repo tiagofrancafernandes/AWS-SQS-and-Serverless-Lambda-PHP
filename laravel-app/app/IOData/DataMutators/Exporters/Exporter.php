@@ -703,6 +703,7 @@ abstract class Exporter implements ContractsExporter
                 'orWhereNot',
                 'orderBy',
                 'whereIn',
+                'whereBetween',
             ], true) ? $method : null;
 
             if (!$method) {

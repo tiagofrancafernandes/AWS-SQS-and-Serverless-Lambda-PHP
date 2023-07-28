@@ -190,10 +190,10 @@ class ArrayHelpers
             }
 
             return (array) match ($decoder) {
-                'unserialize' => unserialize($data),
+                'unserialize' => static::safeUnserialize($data, []),
                 'json_decode' => json_decode($data, true),
-                'unserialize|json_decode' => unserialize($data) ?: json_decode($data, true),
-                'json_decode|unserialize' => json_decode($data, true) ?: unserialize($data),
+                'unserialize|json_decode' => static::safeUnserialize($data, []) ?: json_decode($data, true),
+                'json_decode|unserialize' => json_decode($data, true) ?: static::safeUnserialize($data, []),
                 default => (array) $data,
             };
         } catch (\Throwable $th) {
@@ -204,6 +204,53 @@ class ArrayHelpers
             \Log::error($th);
 
             return [];
+        }
+    }
+
+    /**
+     * serialized function
+     *
+     * @param mixed $value
+     *
+     * @return boolean
+     */
+    public static function serialized(mixed $value): bool
+    {
+        try {
+            if (!$value || !is_string($value) || trim(strlen($value)) < 2 || !str_contains($value, ':')) {
+                return false;
+            }
+
+            unserialize($value, [
+                'max_depth' => 0,
+            ]);
+
+            return true;
+        } catch (\Throwable $th) {
+            return false;
+        }
+    }
+
+    /**
+     * safeUnserialize function
+     *
+     * @param mixed $value
+     * @param mixed $defaultValue
+     *
+     * @return mixed
+     */
+    public static function safeUnserialize(mixed $value, mixed $defaultValue = null): mixed
+    {
+        try {
+            if (!static::serialized($value)) {
+                return $defaultValue;
+            }
+
+            return unserialize($value, [
+                'max_depth' => 0,
+            ]);
+        } catch (\Throwable $th) {
+            return $defaultValue;
         }
     }
 }

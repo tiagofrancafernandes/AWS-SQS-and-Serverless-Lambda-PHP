@@ -134,7 +134,7 @@ class EventHandler
                 'tenant_id' => 'string',
                 'resource' => 'required|string|in:' . implode(',', array_keys(ResourceManager::resourceList())),
                 'mappedColumns' => 'required|array',
-                'modifiers' => 'required|array',
+                'modifiers' => 'array',
                 'callbackUrl' => 'required|url',
             ]);
 
