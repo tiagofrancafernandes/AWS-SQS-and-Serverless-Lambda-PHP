@@ -44,7 +44,8 @@ class UserExporter extends Exporter
     public function getQuery(): \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder
     {
         # Demo
-        return User::query();
+        // return User::query();
+        return \App\IOData\DataMutators\Models\Comptrade\ComptradeUser::query();
     }
 
     public static function getAllowedColumns(): array
@@ -75,18 +76,24 @@ class UserExporter extends Exporter
                 'relationships' => null,
                 'format' => null,
             ],
-            'creator' => [
-                'table_column' => 'created_by',
-                'label' => 'Criado por',
-                'relationships' => [
-                    'creator',
-                ],
-                'format' => function (Arrayable $data = null): string {
-                    $data = static::fluent($data?->toArray());
-
-                    return $data?->get('name') ?: '';
-                },
+            'ativo' => [
+                'table_column' => 'ativo',
+                'label' => null,
+                'relationships' => null,
+                'format' => null,
             ],
+            // 'creator' => [
+            //     'table_column' => 'created_by',
+            //     'label' => 'Criado por',
+            //     'relationships' => [
+            //         'creator',
+            //     ],
+            //     'format' => function (Arrayable $data = null): string {
+            //         $data = static::fluent($data?->toArray());
+
+            //         return $data?->get('name') ?: '';
+            //     },
+            // ],
         ];
     }
 
@@ -98,7 +105,7 @@ class UserExporter extends Exporter
         }
 
         $relationships = [
-            'creator' => fn ($query) => $query->select('id', 'name'),
+            // 'creator' => fn ($query) => $query->select('id', 'name'),
         ];
 
         return $relationships[$relationship] ?? null;

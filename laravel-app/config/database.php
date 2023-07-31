@@ -93,6 +93,20 @@ return [
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
+        'comptrade_central' => [
+            'driver' => 'pgsql',
+            'url' => env('COMPTRADE_DATABASE_URL'),
+            'host' => env('COMPTRADE_DB_HOST', '127.0.0.1'),
+            'port' => env('COMPTRADE_DB_PORT', '5432'),
+            'database' => env('COMPTRADE_DB_DATABASE', 'comptrade'),
+            'username' => env('COMPTRADE_DB_USERNAME', 'comptrade'),
+            'password' => env('COMPTRADE_DB_PASSWORD', ''),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => 'prefer',
+        ],
     ],
 
     /*
