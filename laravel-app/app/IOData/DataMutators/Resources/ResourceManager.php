@@ -46,7 +46,6 @@ abstract class ResourceManager
      */
     public static function resourceList(): array
     {
-        // TODO
         return [
             'tenant_users' => [
                 'export' => \App\IOData\DataMutators\Exporters\UserExporter::class,
@@ -59,6 +58,14 @@ abstract class ResourceManager
             'product_manufacturers' => [
                 'export' => \App\IOData\DataMutators\Exporters\ProductManufacturerExporter::class,
                 'import' => \App\IOData\DataMutators\Importers\ProductManufacturerImporter::class,
+            ],
+            // 'query_builder_exporter' => [ // TODO
+            //     'export' => \App\IOData\DataMutators\Exporters\QueryBuilderExporter::class,
+            //     'import' => \App\IOData\DataMutators\Importers\QueryBuilderExporter::class,
+            // ],
+            'raw_query_exporter' => [
+                'export' => \App\IOData\DataMutators\Exporters\RawQueryExporter::class,
+                'import' => \App\IOData\DataMutators\Importers\RawQueryExporter::class,
             ],
         ];
     }

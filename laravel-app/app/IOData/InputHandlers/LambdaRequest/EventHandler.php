@@ -345,12 +345,16 @@ class EventHandler
                 return $toReturn;
             }
 
-            $requestModel = $data?->requestType === 'import'
-                ? ImportRequest::factory()->createOne(array_merge($requestModelData, [
-                    'import_file_url' => null, // TODO
-                    'import_file_disk_name' => null, // TODO
-                ]))
-                : ExportRequest::factory()->createOne($requestModelData);
+            $requestModel = RequestInfo::createRequestModel(
+                $data?->requestType,
+                $requestModelData,
+            );
+
+            if (!$requestModel) {
+                $toReturn['errors'][] = 'Fail to create a "requestModel"';
+
+                return $toReturn;
+            }
 
             $toReturn['request_Model_id'] = $requestModel->{'id'} ?? null;
 

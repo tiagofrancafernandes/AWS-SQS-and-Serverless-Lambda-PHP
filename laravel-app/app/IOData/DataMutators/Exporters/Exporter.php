@@ -7,6 +7,7 @@ use Illuminate\Support\Fluent;
 use App\Helpers\File\FileHelpers;
 use OpenSpout\Writer\XLSX\Writer;
 use \App\Enums\IORequestStatusEnum;
+use App\Helpers\Array\ArrayHelpers;
 use Illuminate\Support\Facades\Storage;
 use OpenSpout\Common\Entity\Style\Color;
 use OpenSpout\Common\Entity\Style\Style;
@@ -350,7 +351,7 @@ abstract class Exporter implements ContractsExporter
          * after end
          */
 
-         if (!$this->isFinished()) {
+        if (!$this->isFinished()) {
             logAndDumpSpf(
                 'Setting as finished with status: %s [%s]',
                 $this->getCurrentStatusName(),
@@ -481,10 +482,6 @@ abstract class Exporter implements ContractsExporter
             throw new \Exception('Empty "fileExcelWriter"', 1);
         }
 
-        $rowStyle = (new Style())
-            ->setCellAlignment(CellAlignment::LEFT)
-            ->setShouldWrapText(false);
-
         $mappedColumns = static::stringKeys($this->requestInfo?->getMappedColumns() ?? []);
 
         $columns = static::getColumns(array_keys($mappedColumns));
@@ -498,15 +495,17 @@ abstract class Exporter implements ContractsExporter
                 $this->requestInfo?->getModifiers() ?? []
             )
                 ->select(static::getTableColumns($columns));
-
-            $this->fileExcelWriter->addHeader(array_values($mappedColumns));
         }
+
+        $this->fileExcelWriter->addHeader(array_values($mappedColumns));
 
         if (is_a($query, \Illuminate\Database\Query\Builder::class) && !$query?->orders) {
             $defaultSortColumn = explode(' as ', $query->columns[0] ?? '')[0] ?? $defaultSort[0] ?? 'id';
             $defaultSort[0] = $defaultSortColumn;
             $query = $query->orderBy(...$defaultSort);
         }
+
+        $rowStyle = static::getRowStyle();
 
         $query->chunk(100, function ($records) use (
             $columns,
@@ -701,9 +700,9 @@ abstract class Exporter implements ContractsExporter
                 throw new \Exception('The modifiers must be an array or serialized array');
             }
 
-            $unserialized = is_string($modifier) ? unserialize($modifier) : $modifier;
+            $unserialized = is_string($modifier) ? ArrayHelpers::stringToArray($modifier) : $modifier;
 
-            if (!$unserialized || !is_array($unserialized) || count($unserialized) != 2) {
+            if (!$unserialized || !is_array($unserialized) || !in_array(count($unserialized), [1, 2], true)) {
                 continue;
             }
 
@@ -812,7 +811,7 @@ abstract class Exporter implements ContractsExporter
                 # set columns 9 through 12 to width 10
                 // $options->setColumnWidthForRange(10, 9, 12);
 
-                $options->setColumnWidthForRange(35, 2, 15);
+                $options->setColumnWidthForRange(25, 2, 15);
             }
         );
 
@@ -880,6 +879,13 @@ abstract class Exporter implements ContractsExporter
             'Removed temp file?: ' . var_export(!is_file($this->fileExcelWriter?->getPath()), true),
             currentFileAndLine(true),
         );
+    }
+
+    public static function getRowStyle(): Style
+    {
+        return (new Style())
+            ->setCellAlignment(CellAlignment::LEFT)
+            ->setShouldWrapText(false);
     }
 
     abstract public function getQuery(): \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder;

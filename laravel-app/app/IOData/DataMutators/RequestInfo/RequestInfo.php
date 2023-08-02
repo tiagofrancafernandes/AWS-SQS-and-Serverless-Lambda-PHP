@@ -2,8 +2,11 @@
 
 namespace App\IOData\DataMutators\RequestInfo;
 
+use App\Models\ExportRequest;
+use App\Models\ImportRequest;
 use Illuminate\Support\Carbon;
 use App\Enums\IORequestStatusEnum;
+use Illuminate\Support\Collection;
 use App\Models\Interfaces\RequestModel;
 use Illuminate\Support\Facades\Storage;
 use App\IOData\DataMutators\Enums\RequestTypeEnum;
@@ -20,6 +23,57 @@ class RequestInfo
         protected RequestModel $requestModel,
     ) {
         $this->initData();
+    }
+
+    /**
+     * createRequestModel function
+     *
+     * @param string $requestType
+     * @param array|Collection $requestModelData
+     *
+     * @return RequestModel|null
+     */
+    public static function createRequestModel(
+        string $requestType,
+        array|Collection $requestModelData,
+    ): ?RequestModel {
+        $requestType = trim(strtolower($requestType));
+
+        if (!in_array($requestType, ['import', 'export'], true)) {
+            return null;
+        }
+
+        return $requestType === 'import'
+            ? ImportRequest::factory()->createOne(array_merge($requestModelData, [
+                'import_file_url' => null, // TODO
+                'import_file_disk_name' => null, // TODO
+            ]))
+            : ExportRequest::factory()->createOne($requestModelData);
+    }
+
+    /**
+     * loadRequestModel function
+     *
+     * @param null|string|integer|RequestModel $requestModel
+     * @param string|null $requestType
+     *
+     * @return RequestModel|null
+     */
+    public static function loadRequestModel(
+        null|string|int|RequestModel $requestModel,
+        ?string $requestType = null,
+    ): ?RequestModel {
+        $requestType = trim(strtolower((string) $requestType));
+
+        if (is_a($requestModel, RequestModel::class)) {
+            return $requestModel;
+        }
+
+        if (!in_array($requestType, ['import', 'export'], true)) {
+            return null;
+        }
+
+        return $requestType === 'import' ? ImportRequest::find($requestModel) : ExportRequest::find($requestModel);
     }
 
     protected function initData()
@@ -105,7 +159,15 @@ class RequestInfo
                 $this->getTenantId(),
                 $this->getResourceName(),
                 $this->getType(),
-                ...array_filter($this->getFilters(), fn ($item) => $item && is_string($item) && trim($item)),
+                md5(
+                    implode(
+                        '-',
+                        array_filter(
+                            $this->getFilters(),
+                            fn ($item) => $item && is_string($item) && trim($item)
+                        )
+                    )
+                ),
             ]
         );
 
