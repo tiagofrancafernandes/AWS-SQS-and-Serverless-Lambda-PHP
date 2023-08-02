@@ -52,6 +52,14 @@ abstract class ResourceManager
                 'export' => \App\IOData\DataMutators\Exporters\UserExporter::class,
                 'import' => \App\IOData\DataMutators\Importers\UserImporter::class,
             ],
+            'products' => [
+                'export' => \App\IOData\DataMutators\Exporters\ProductExporter::class,
+                'import' => \App\IOData\DataMutators\Importers\ProductImporter::class,
+            ],
+            'product_manufacturers' => [
+                'export' => \App\IOData\DataMutators\Exporters\ProductManufacturerExporter::class,
+                'import' => \App\IOData\DataMutators\Importers\ProductManufacturerImporter::class,
+            ],
         ];
     }
 }

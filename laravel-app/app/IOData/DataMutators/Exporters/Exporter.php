@@ -472,6 +472,11 @@ abstract class Exporter implements ContractsExporter
 
     protected function process()
     {
+        $defaultSort = [
+            'id',
+            'asc',
+        ];
+
         if (!$this->fileExcelWriter) {
             throw new \Exception('Empty "fileExcelWriter"', 1);
         }
@@ -484,14 +489,24 @@ abstract class Exporter implements ContractsExporter
 
         $columns = static::getColumns(array_keys($mappedColumns));
 
-        $query = static::modifyQuery(
-            $this->getQuery(),
-            $columns,
-            $this->requestInfo?->getModifiers() ?? []
-        )
-            ->select(static::getTableColumns($columns));
+        $query = $this->getQuery();
 
-        $this->fileExcelWriter->addHeader(array_values($mappedColumns));
+        if (!is_a($query, \Illuminate\Database\Query\Builder::class)) {
+            $query = static::modifyQuery(
+                $query,
+                $columns,
+                $this->requestInfo?->getModifiers() ?? []
+            )
+                ->select(static::getTableColumns($columns));
+
+            $this->fileExcelWriter->addHeader(array_values($mappedColumns));
+        }
+
+        if (is_a($query, \Illuminate\Database\Query\Builder::class) && !$query?->orders) {
+            $defaultSortColumn = explode(' as ', $query->columns[0] ?? '')[0] ?? $defaultSort[0] ?? 'id';
+            $defaultSort[0] = $defaultSortColumn;
+            $query = $query->orderBy(...$defaultSort);
+        }
 
         $query->chunk(100, function ($records) use (
             $columns,
@@ -704,6 +719,7 @@ abstract class Exporter implements ContractsExporter
                 'orderBy',
                 'whereIn',
                 'whereBetween',
+                'withTrashed',
             ], true) ? $method : null;
 
             if (!$method) {
@@ -714,11 +730,7 @@ abstract class Exporter implements ContractsExporter
 
             $params = is_array($params) && array_values($params) ? array_values($params) : null;
 
-            if (!$params) {
-                return $query;
-            }
-
-            $query = $query->{$method}(...$params);
+            $query = $params ? $query->{$method}(...$params) : $query->{$method}();
         }
 
         return $query;
@@ -792,13 +804,15 @@ abstract class Exporter implements ContractsExporter
                 $options->DEFAULT_ROW_HEIGHT = 15; // set default height
 
                 # set columns 2 and 10 to width 40
-                $options->setColumnWidth(40, 2, 10);
+                // $options->setColumnWidth(40, 2, 10);
 
                 # set columns 1, 3 and 8 to width 30
-                $options->setColumnWidth(30, 1, 3, 8);
+                // $options->setColumnWidth(30, 1, 3, 8);
 
                 # set columns 9 through 12 to width 10
                 // $options->setColumnWidthForRange(10, 9, 12);
+
+                $options->setColumnWidthForRange(35, 2, 15);
             }
         );
 
