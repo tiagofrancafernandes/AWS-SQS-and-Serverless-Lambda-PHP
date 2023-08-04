@@ -33,6 +33,8 @@ RUN chmod +x /usr/bin/composer
 ## Copie o código da função Lambda para o diretório de trabalho
 COPY . /var/task
 
+RUN composer --working-dir=/var/task/laravel-app install
+
 ################################################
 ### Configurando o handler da função Lambda
 # No docker-compose, essa linha vai em 'command:'
