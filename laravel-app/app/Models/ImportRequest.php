@@ -9,6 +9,7 @@ use App\IOData\DataMutators\Enums\RequestTypeEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class ImportRequest extends Model implements RequestModel
+// class ImportRequest extends ImportExportRequest implements RequestModel
 {
     use HasFactory;
     use RequestModelMethods;

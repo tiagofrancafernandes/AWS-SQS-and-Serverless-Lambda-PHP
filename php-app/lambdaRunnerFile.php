@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\IOData\DB\LambdaRuntimeDatabase;
 use App\IOData\InputHandlers\LambdaRequest\EventHandler;
 
 // $laravelPath = __DIR__ . '/../no-commit-old/laravel-app';
@@ -11,8 +12,15 @@ require_once __DIR__ . '/../utils/laravel-core.php';
 function handler(array $event): string
 {
     try {
-        echo __FILE__ . ':' . __LINE__ . PHP_EOL;
-        echo __FUNCTION__ . PHP_EOL;
+        print_r(__FILE__ . ':' . __LINE__);
+        print_r(__FUNCTION__);
+        print_r(
+            LambdaRuntimeDatabase::setRuntimeDatabaseAs(
+                'sqlite',
+                true,
+                true,
+            )
+        );
 
         $eventHandler = new EventHandler($event);
 

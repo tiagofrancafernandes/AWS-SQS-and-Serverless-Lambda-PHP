@@ -3,6 +3,14 @@
 use Illuminate\Support\Str;
 
 return [
+    // WIP
+    'runtime_database' => [
+        'allowed_to_set' => env('ALLOW_SET_RUNTIME_DATABASE', true),
+        'run_in_prod' => env('RUNTIME_DATABASE_RUN_IN_PROD', false),
+        'connection_name' => env('RUNTIME_DATABASE_CONNECTION_NAME', 'sqlite'),
+        'run_migrations' => env('RUN_MIGRATIONS_ON_RUNTIME_DATABASE', true),
+        'run_migrations_on_steps' => true,
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -38,6 +46,13 @@ return [
             'driver' => 'sqlite',
             'url' => env('DATABASE_URL'),
             'database' => env('DB_DATABASE', database_path('database.sqlite')),
+            'prefix' => '',
+            'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
+        ],
+
+        'sqlite_memory' => [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
         ],

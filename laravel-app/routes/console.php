@@ -7,6 +7,7 @@ use Illuminate\Foundation\Inspiring;
 use App\Helpers\Tenancy\TenantRunner;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Artisan;
+use App\IOData\DB\LambdaRuntimeDatabase;
 use App\IOData\DataMutators\RequestInfo\RequestInfo;
 
 /*
@@ -220,7 +221,6 @@ Artisan::command('run:temp:query:builder', function () {
     dump('result2_ater:', $result2Alter);
 })->purpose('Temp run sql bind');
 
-
 Artisan::command('run:temp:custom:query:exporter', function () {
     $query = DB::table('products')
         ->where('products.id', 650)
@@ -296,3 +296,13 @@ Artisan::command('run:temp:custom:query:exporter', function () {
         )
     );
 })->purpose('Run temp script');
+
+Artisan::command('run:temp:memory_database', function () {
+    print_r(
+        LambdaRuntimeDatabase::setRuntimeDatabaseAs(
+            'sqlite',
+            true,
+            true,
+        )
+    );
+})->purpose('Display an inspiring quote');
