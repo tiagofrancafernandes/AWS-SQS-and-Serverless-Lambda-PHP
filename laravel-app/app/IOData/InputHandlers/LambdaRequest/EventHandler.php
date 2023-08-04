@@ -99,6 +99,8 @@ class EventHandler
             config('import-export.lambda_process.throw_on_lambda_process'),
         );
 
+        print_r(['processResult' => $processResult]);
+
         $processRecordReturnData['processResult'] = $processResult;
         $wasFinishedSuccessfully = $processResult['was_finished_successfully'] ?? null;
 
@@ -133,7 +135,7 @@ class EventHandler
                 'user_id' => 'required|string',
                 'tenant_id' => 'string',
                 'resource' => 'required|string|in:' . implode(',', array_keys(ResourceManager::resourceList())),
-                'mappedColumns' => 'required|array',
+                'mappedColumns' => 'array',
                 'modifiers' => 'array',
                 'callbackUrl' => 'required|url',
             ]);
@@ -299,7 +301,7 @@ class EventHandler
                     'requestType' => !$data?->requestType,
                     'user_id_type' => !$data?->user_id_type,
                     'user_id' => !$data?->user_id,
-                    'mappedColumns' => !$data?->mappedColumns,
+                    // 'mappedColumns' => !$data?->mappedColumns,
                     // 'tenant_id' => !$data?->tenant_id,
                     // 'modifiers' => !$data?->modifiers,
                 ])

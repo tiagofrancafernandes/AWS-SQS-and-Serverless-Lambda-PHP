@@ -82,38 +82,38 @@ class RawQueryExporter extends Exporter
             $rowStyle = static::getRowStyle();
             $addedHeaders = false;
 
-            collect(DB::select(
-                $rawSql,
-                $rawSqlBindings
-            ))
-                ->each(function ($record) use (
-                    $mappedColumns,
-                    &$addedHeaders,
-                    $rowStyle,
-                ) {
-                    $modifiedRecord = [];
+            foreach (DB::cursor( $rawSql, $rawSqlBindings ) as $record) {
+                $modifiedRecord = [];
+                collect($record)->each(function ($value, $key) use ($mappedColumns, &$modifiedRecord) {
+                    $newKey = $key && is_string($key) ? $mappedColumns[$key] ?? $key : $key;
 
-                    collect($record)->each(function ($value, $key) use ($mappedColumns, &$modifiedRecord) {
-                        $newKey = $key && is_string($key) ? $mappedColumns[$key] ?? $key : $key;
-
-                        $modifiedRecord[$newKey] = static::castFormater($value);
-                    });
-
-                    if (!$addedHeaders) {
-                        $this->fileExcelWriter->addHeader(array_keys($modifiedRecord));
-
-                        $addedHeaders = true;
-                    }
-
-                    $this->fileExcelWriter->addRow(static::validRow((array) $modifiedRecord), $rowStyle);
+                    $modifiedRecord[$newKey] = static::castFormater($value);
                 });
+
+                if (!$addedHeaders) {
+                    $this->fileExcelWriter->addHeader(array_keys($modifiedRecord));
+
+                    $addedHeaders = true;
+                }
+
+                if (!$modifiedRecord) {
+                    continue;
+                }
+
+                $this->fileExcelWriter->addRow(static::validRow((array) $modifiedRecord), $rowStyle);
+            }
 
             echo 'Used memory: ' . (memory_get_peak_usage(true) / 1024 / 1024) . PHP_EOL;
 
             // $failStyle = static::getStyle('fail', $rowStyle);
         } catch (\Throwable $th) {
             \Log::error($th);
-            throw $th->getMessage();
+
+            print_r([
+                'error_line' => $th->getLine(),
+                'error' => $th->getMessage(),
+                'line' => __FILE__ . ':' . __LINE__,
+            ]);
 
             $this->pushRunReturn([
                 'success' => false,
@@ -123,7 +123,7 @@ class RawQueryExporter extends Exporter
             ]);
 
             if ($this->debugIsOn()) {
-                throw $th->getMessage();
+                throw $th;
             }
         }
     }

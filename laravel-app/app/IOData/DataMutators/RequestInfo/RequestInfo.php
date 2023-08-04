@@ -96,7 +96,7 @@ class RequestInfo
         foreach ([
             'type' => $this->getType(),
             'resourceName' => $this->getResourceName(),
-            'mappedColumns' => $this->getMappedColumns(),
+            // 'mappedColumns' => $this->getMappedColumns(),
             'actionProcessor' => $this->getActionProcessor(),
         ] as $param => $value) {
             if (!$value) {

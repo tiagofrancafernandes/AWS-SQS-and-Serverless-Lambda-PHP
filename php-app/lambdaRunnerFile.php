@@ -25,11 +25,6 @@ function handler(array $event): string
         ];
 
         foreach ($records as $recordData) {
-            // file_put_contents(
-            //     __DIR__ . '/../no-commit-old/copy-of-bootstrap',
-            //     file_get_contents('/var/runtime/bootstrap')
-            // );
-
             $processRecordReturnData = $eventHandler->processRecord(collect($recordData));
 
             if ($processRecordReturnData['fail'] ?? null) {

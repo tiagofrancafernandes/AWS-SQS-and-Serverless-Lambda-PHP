@@ -101,7 +101,7 @@ Artisan::command('run:temp:sql:bind', function () {
      * Teste que surgiu de uma sugestão do Michel
      * Analisando a possibilidade para não ter que criar models no exportador
      */
-    ini_set('memory_limit', '800M'); // Usado aqui para testar as possibilidades
+    ini_set('memory_limit', '100M'); // Usado aqui para testar as possibilidades
 
     // setDefaultConnection
 
@@ -113,6 +113,14 @@ Artisan::command('run:temp:sql:bind', function () {
 
     echo 'Used memory: ' . (memory_get_peak_usage(true) / 1024 / 1024) . PHP_EOL;
 
+    $count = 0;
+    // foreach (DB::cursor('select * from users where id in (?, ?, ?)', [1, 3, 4]) as $user) {
+    foreach (DB::cursor($sql, $bindings) as $user) {
+        // dd($user);
+        $count++;
+        echo $user?->id . ' | ';
+    }
+
     // collect(DB::select($sql, $bindings))
     //     ->each(function ($user) {
     //         if ($user->id == 1) {
@@ -122,8 +130,10 @@ Artisan::command('run:temp:sql:bind', function () {
     //         return;
     //     });
 
-    dump(DB::select('select count(*) from users', []));
+    // dump(DB::select('select count(*) from users', []));
+
     echo 'Used memory: ' . (memory_get_peak_usage(true) / 1024 / 1024) . PHP_EOL;
+    dd($count);
 
     // SimpleExcelWriter::create
 
@@ -231,47 +241,50 @@ Artisan::command('run:temp:custom:query:exporter', function () {
         (new RequestInfo(
             $exportRequest = RequestInfo::createRequestModel(
                 'export',
-                [
-                'resource_name' => 'raw_query_exporter',
-                'tenant_id' => null,
-                'tenant_id' => 'global',
-                'tenant_id' => 'catupiry',
-                'mapped_columns' => $mapped_columns = [
-                    'id' => 'ID',
-                    'uuid' => 'UUID v4',
-                    'name' => 'Produto',
-                    'barcode' => 'Código de barras',
-                    'sku' => 'SKU',
-                    'customer_sku' => 'SKU do cliente',
-                    'is_competitor' => 'Concorrente',
-                    'is_active' => 'Ativo',
-                    'product_category_id' => 'ID da categoria',
-                    'product_brand_id' => 'ID da marca',
-                    'product_type_id' => 'ID do tipo',
-                    'product_manufacturer_id' => 'ID do fabricante',
-                    'created_at' => 'Criado em',
-                    'updated_at' => 'Atualizado em',
-                    'deleted_at' => 'Deletado em',
-                    'brand' => 'Marca',
-                    'category' => 'Categoria',
-                    'type' => 'Tipo',
-                    'manufacturer' => 'Fabricante',
-                ],
-                'modifiers' => $modifiers = [
-                    # Demo
-                    // ['where', ['id', '>=', 3335]],
-                    // serialize(['whereIn', ['id', [3335, 3336, 3337]]]),
-                    // serialize(['whereIn', ['id', [3335, 3336, 3337]]]),
-
-                    'rawQuery' => [
-                        'sql' => $query->toSql(),
-                        'bindings' => $query->getBindings(),
+                $exportRequestData = [
+                    'resource_name' => 'raw_query_exporter',
+                    'tenant_id' => null,
+                    'tenant_id' => 'global',
+                    'tenant_id' => 'catupiry',
+                    'mapped_columns' => $mapped_columns = [
+                        'id' => 'ID',
+                        'uuid' => 'UUID',
+                        'name' => 'Produto',
+                        'barcode' => 'Código de barras',
+                        'sku' => 'SKU',
+                        'customer_sku' => 'SKU do cliente',
+                        'is_competitor' => 'Concorrente',
+                        'is_active' => 'Ativo',
+                        'product_category_id' => 'ID da categoria',
+                        'product_brand_id' => 'ID da marca',
+                        'product_type_id' => 'ID do tipo',
+                        'product_manufacturer_id' => 'ID do fabricante',
+                        'created_at' => 'Criado em',
+                        'updated_at' => 'Atualizado em',
+                        'deleted_at' => 'Deletado em',
+                        'brand' => 'Marca',
+                        'category' => 'Categoria',
+                        'type' => 'Tipo',
+                        'manufacturer' => 'Fabricante',
                     ],
-                ],
-            ])
+                    'modifiers' => $modifiers = [
+                        # Demo
+                        // ['where', ['id', '>=', 3335]],
+                        // serialize(['whereIn', ['id', [3335, 3336, 3337]]]),
+                        // serialize(['whereIn', ['id', [3335, 3336, 3337]]]),
+
+                        'rawQuery' => [
+                            'sql' => $query->toSql(),
+                            'bindings' => $query->getBindings(),
+                        ],
+                    ],
+                ]
+            )
         ))
     ))
         ->debug(true)->runProcess()->getLastRunReturn());
+
+    dd($exportRequestData);
 
     // dump($exportRequest->toArray(), $exportRequest?->getFinalFileUrl());
     dump($exportRequest->{'id'});
