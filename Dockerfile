@@ -35,6 +35,8 @@ COPY . /var/task
 
 RUN composer --working-dir=/var/task/laravel-app install
 
+RUN amazon-linux-extras enable postgresql14
+
 ################################################
 ### Configurando o handler da função Lambda
 # No docker-compose, essa linha vai em 'command:'
