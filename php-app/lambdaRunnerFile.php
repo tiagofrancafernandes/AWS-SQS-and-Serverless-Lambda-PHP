@@ -14,6 +14,12 @@ function handler(array $event): string
     try {
         print_r(__FILE__ . ':' . __LINE__);
         print_r(__FUNCTION__);
+        print_r([
+            'AWS_LAMBDA_FUNCTION_NAME' => env('AWS_LAMBDA_FUNCTION_NAME'),
+            'AWS_LAMBDA_FUNCTION_VERSION' => env('AWS_LAMBDA_FUNCTION_VERSION'),
+            'AWS_REGION' => env('AWS_REGION'),
+        ]);
+
         print_r(
             LambdaRuntimeDatabase::setRuntimeDatabaseAs(
                 'sqlite',
