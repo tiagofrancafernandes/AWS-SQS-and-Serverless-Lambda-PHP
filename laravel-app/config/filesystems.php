@@ -8,6 +8,10 @@ $clearedStr = fn (string $str, string $replacer = '') => str_replace(
     trim(preg_replace('/[\W]/', '_', trim($str)), '_')
 );
 
+$clearPath = function (array $paths) {
+    return implode('/', array_map(fn ($item) => trim($item, DIRECTORY_SEPARATOR), array_filter($paths)));
+};
+
 return [
 
     /*
@@ -81,19 +85,28 @@ return [
         'import' => [
             'driver' => 'scoped',
             'disk' => 'import-export',
-            'prefix' => 'import-files', // path/to/dir
+            'prefix' => $clearPath([
+                env('IMPORT_EXPORT_S3_PREFIX', ''),
+                'import-files',
+            ]), // path/to/dir
         ],
 
         'export' => [
             'driver' => 'scoped',
             'disk' => 'import-export',
-            'prefix' => 'export-files', // path/to/dir
+            'prefix' => $clearPath([
+                env('IMPORT_EXPORT_S3_PREFIX', ''),
+                'export-files',
+            ]), // path/to/dir
         ],
 
         'ie_report' => [
             'driver' => 'scoped',
             'disk' => 'import-export',
-            'prefix' => 'report-files', // path/to/dir
+            'prefix' => $clearPath([
+                env('IMPORT_EXPORT_S3_PREFIX', ''),
+                'report-files',
+            ]), // path/to/dir
             'throw' => (bool) env('AWS_BUCKET_IMPORT_EXPORT_THROW', false),
         ],
 
