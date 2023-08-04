@@ -50,6 +50,9 @@ class LambdaRuntimeDatabase
             print_r(['sqliteFilePath' => $sqliteFilePath]);
 
             Config::set('database.connections.sqlite.database', $sqliteFilePath);
+
+            Config::set('logging.default', 'stderr');
+
             dump(Storage::disk('tmp')->exists('database/database.sqlite'));
 
             if (Storage::disk('tmp')->exists('database/database.sqlite')) {
