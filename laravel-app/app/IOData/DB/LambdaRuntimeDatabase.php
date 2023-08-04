@@ -5,6 +5,7 @@ namespace App\IOData\DB;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Storage;
 
 class LambdaRuntimeDatabase
 {
@@ -44,20 +45,24 @@ class LambdaRuntimeDatabase
         $connectionName = $connectionName ?: 'sqlite_memory';
 
         if ($connectionName == 'sqlite') {
-            Config::set('database.connections.sqlite.database', database_path('database.sqlite'));
-            dump(is_file(database_path('database.sqlite')));
+            $sqliteFilePath = Storage::disk('tmp')->path('database/database.sqlite');
 
-            if (file_exists(database_path('database.sqlite'))) {
-                unlink(database_path('database.sqlite'));
+            print_r(['sqliteFilePath' => $sqliteFilePath]);
+
+            Config::set('database.connections.sqlite.database', $sqliteFilePath);
+            dump(Storage::disk('tmp')->exists('database/database.sqlite'));
+
+            if (Storage::disk('tmp')->exists('database/database.sqlite')) {
+                Storage::disk('tmp')->delete('database/database.sqlite');
             }
 
-            dump(is_file(database_path('database.sqlite')));
+            dump(Storage::disk('tmp')->exists('database/database.sqlite'));
 
-            if (!file_exists(database_path('database.sqlite'))) {
-                touch(database_path('database.sqlite'));
+            if (!Storage::disk('tmp')->exists('database/database.sqlite')) {
+                Storage::disk('tmp')->put('database/database.sqlite', '');
             }
 
-            dump(is_file(database_path('database.sqlite')));
+            dump(Storage::disk('tmp')->exists('database/database.sqlite'));
         }
 
         DB::setDefaultConnection($connectionName);
