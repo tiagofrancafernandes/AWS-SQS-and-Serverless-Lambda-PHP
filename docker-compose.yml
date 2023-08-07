@@ -4,6 +4,8 @@ services:
         environment:
             - PHP_VERSION=8.1
             - LAMBDA_HANDLER_FUNCTION=${LAMBDA_HANDLER_FUNCTION}
+            - MACHINE_HOST
+            - DB_HOST
         build:
             context: .
             dockerfile: Dockerfile

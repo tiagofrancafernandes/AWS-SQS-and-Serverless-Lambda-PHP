@@ -1,5 +1,6 @@
 build-and-push.sh
 *.log
 *no*commit*
+*no*docker*
 # .env
 .git

@@ -35,7 +35,10 @@ COPY . /var/task
 
 RUN composer --working-dir=/var/task/laravel-app install
 
+# RUN amazon-linux-extras enable postgresql10
 RUN amazon-linux-extras enable postgresql14
+RUN yum install -y libpq-devel libpq postgresql
+RUN rpm -qa|grep postgres
 
 ################################################
 ### Configurando o handler da função Lambda
