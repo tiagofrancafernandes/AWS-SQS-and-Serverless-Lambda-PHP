@@ -106,7 +106,7 @@ function handler(array $event): string
     } catch (\Throwable $th) {
         return jsonResponse([
             'error' => 'Falha em ' . $th->getFile() . ':' . $th->getLine(),
-            'res_file' => 'Falha em ' . __FILE__ . ':' . __LINE__,
+            'catch_on' => __FILE__ . ':' . __LINE__,
             'errorMessage' => $th->getMessage(),
             'event' => $event,
         ]);
