@@ -36,26 +36,28 @@ class RawQueryExporter extends Exporter
 
     protected function handle()
     {
-        if (!$this->tenant) {
-            $this->process();
-            return;
-        }
+        DB::transaction(function () {
+            if (!$this->tenant) {
+                $this->process();
+                return;
+            }
 
-        $output = TenantRunner::make([
-            'requestInfo' => $this->requestInfo,
-            'tenant' => $this->tenant,
-            'exporter' => $this,
-        ])
-            ->run(
-                $this->tenant,
-                function (TenantRunner $runner) {
-                    $params = $runner->getData(); // Exemplo de recuperação dos parâmetros
+            $output = TenantRunner::make([
+                'requestInfo' => $this->requestInfo,
+                'tenant' => $this->tenant,
+                'exporter' => $this,
+            ])
+                ->run(
+                    $this->tenant,
+                    function (TenantRunner $runner) {
+                        $params = $runner->getData(); // Exemplo de recuperação dos parâmetros
 
-                    return $this->process();
-                }
-            );
+                        return $this->process();
+                    }
+                );
 
-        dump($output);
+            dump($output);
+        }, 2);
     }
 
     protected function process()

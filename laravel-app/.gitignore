@@ -18,3 +18,9 @@ yarn-error.log
 /.idea
 /.vscode
 a.out
+lambda-local.env
+lambda-dev.env
+lambda-staging.env
+lambda-prod.env
+lambda-production.env
+lambda.env

@@ -2,6 +2,7 @@ FROM public.ecr.aws/tiago/lambda-laravel-aws-php-base:latest
 # FROM public.ecr.aws/v1x3t5p5/lambda-laravel-aws-php-base:latest
 
 ARG LAMBDA_HANDLER_FUNCTION='handler.helloWorld'
+
 ENV LAMBDA_HANDLER_FUNCTION=${LAMBDA_HANDLER_FUNCTION:-handler.helloWorld}
 
 RUN echo "LAMBDA_HANDLER_FUNCTION: ${LAMBDA_HANDLER_FUNCTION}"

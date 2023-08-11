@@ -15,6 +15,13 @@ $app = new Illuminate\Foundation\Application(
     $_ENV['APP_BASE_PATH'] ?? dirname(__DIR__)
 );
 
+$laravelEnvFile = trim(strval($_SERVER['LARAVEL_ENV_FILE'] ?? null));
+
+if ($laravelEnvFile) {
+    $_SERVER['LARAVEL_ENV_FILE'] = $laravelEnvFile;
+    $app->loadEnvironmentFrom($laravelEnvFile);
+}
+
 /*
 |--------------------------------------------------------------------------
 | Bind Important Interfaces

@@ -1,3 +1,3 @@
 <?php
 
-require_once __DIR__ . '/php-app/downloadable-file.php';
+require_once __DIR__ . '/artifact-file-runner.php';

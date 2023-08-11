@@ -50,15 +50,39 @@ class EventHandler
         mixed $defaultValue = null,
         bool $stringToArray = false,
     ): mixed {
-        $alterKey ??= $key;
+        $alterKey = $alterKey ?: $key;
 
-        $value = $messageAttributes[$key]['StringValue'] ?? $messageAttributes[$alterKey]['StringValue'] ?? $defaultValue ?? null;
-
-        if (!$stringToArray) {
-            return $value;
+        if (!$messageAttributes || (!$key && !$alterKey)) {
+            return $defaultValue;
         }
 
-        return ArrayHelpers::stringToArray((string) $value);
+        $data = $messageAttributes[$key] ?? $messageAttributes[$alterKey] ?? null;
+
+        if (!$data) {
+            return $defaultValue;
+        }
+
+        $binaryListValues = ($data['binaryListValues'] ?? $data['BinaryListValues'] ?? null) ?: null;
+        $stringListValues = ($data['stringListValues'] ?? $data['StringListValues'] ?? null) ?: null;
+        $stringValue = ($data['stringValue'] ?? $data['StringValue'] ?? null) ?: null;
+
+        if ($binaryListValues) {
+            return $binaryListValues;
+        }
+
+        if ($stringListValues) {
+            return $stringListValues;
+        }
+
+        if ($stringValue) {
+            if (!$stringToArray) {
+                return $stringValue;
+            }
+
+            return ArrayHelpers::stringToArray((string) $stringValue);
+        }
+
+        return $defaultValue;
     }
 
     public function processRecord(Collection $recordData): Collection

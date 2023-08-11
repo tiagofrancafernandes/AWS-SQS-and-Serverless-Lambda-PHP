@@ -6,6 +6,7 @@ services:
             - LAMBDA_HANDLER_FUNCTION=${LAMBDA_HANDLER_FUNCTION}
             - MACHINE_HOST
             - DB_HOST
+            - LARAVEL_ENV_FILE
         build:
             context: .
             dockerfile: Dockerfile

@@ -1,2 +1,5 @@
 alias ls='ls --color=auto'
 alias las='ls -lah'
+alias oldpwd='cd $OLDPWD'
+alias artisan='php /var/task/laravel-app/artisan'
+alias tinker='CWD=/var/task/laravel-app/ php /var/task/laravel-app/artisan tinker'
