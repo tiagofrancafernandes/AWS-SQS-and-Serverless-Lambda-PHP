@@ -29,6 +29,9 @@ function handler(array $event): string
 
     try {
         echo __FILE__ . ':' . __LINE__ . PHP_EOL;
+        var_export(config('import-export.export.target_disk') == 'export') . PHP_EOL;
+
+        Storage::disk('export')->put('teste-lambda-runtime', date('c')); // TODO: remover [é para teste S3]
 
         $record = $event['Records'][0] ?? [];
         $messageAttributes = recordAttributes($record);
