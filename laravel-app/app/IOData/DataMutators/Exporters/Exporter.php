@@ -56,6 +56,22 @@ abstract class Exporter implements ContractsExporter
         $this->setTempStorage($tempLocalStorage, $tempFileName);
         $this->setTargetStorage($targetStorage, $targetFileName);
 
+        $currentLine = currentFileAndLine();
+
+        $importExportConfigs = config('import-export');
+        $disks = config('filesystems.disks');
+
+        print_r( // TODO: remover isso pos prod
+            json_encode(compact(
+                'tempLocalStorage',
+                'tempFileName',
+                'targetStorage',
+                'targetFileName',
+                'importExportConfigs',
+                'currentLine',
+            ), 64 | 128)
+        );
+
         $this->setStatus(IORequestStatusEnum::INITIALIZED, true);
 
         $this->addStep(__METHOD__, date('c'));
