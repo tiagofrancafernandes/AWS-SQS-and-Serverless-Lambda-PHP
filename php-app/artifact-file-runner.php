@@ -75,7 +75,7 @@ function handler(array $event): string
             }
         }
 
-        $localArtifactFilePath = $localArtifactFilePath ?: 'php-app/artifacts/main-artifact-file.php';
+        $localArtifactFilePath = ($localArtifactFilePath ?? null) ?: 'php-app/artifacts/main-artifact-file.php';
 
         if (!is_file($localArtifactFilePath)) {
             $message = 'Fail to load artifact file.';
@@ -105,8 +105,8 @@ function handler(array $event): string
         );
     } catch (\Throwable $th) {
         return jsonResponse([
-            'error' => 'Falha em ' . __FILE__ . ':' . __LINE__,
-            'errorLine' => $th->getLine(),
+            'error' => 'Falha em ' . $th->getFile() . ':' . $th->getLine(),
+            'res_file' => 'Falha em ' . __FILE__ . ':' . __LINE__,
             'errorMessage' => $th->getMessage(),
             'event' => $event,
         ]);
