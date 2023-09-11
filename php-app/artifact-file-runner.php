@@ -1,6 +1,8 @@
 <?php
 
 declare(strict_types=1);
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
 use Illuminate\Support\Facades\DB;
 use App\Helpers\Array\ArrayHelpers;
@@ -57,6 +59,7 @@ function handler(array $event): string
             ], 422);
         }
 
+        stdoutLog(__FILE__ . ':' . __LINE__);
 
         try {
             /**
@@ -78,15 +81,21 @@ function handler(array $event): string
             ], 422);
         }
 
+        stdoutLog(__FILE__ . ':' . __LINE__);
+
         $artifactFilePathOnS3 = recordAttribute($record, 'artifactFilePathOnS3')
             ?? env('ARTIFACT_FILE_PATH_ON_S3');
 
         if ($artifactFilePathOnS3) {
+            stdoutLog(__FILE__ . ':' . __LINE__);
+
             printLine('artifactFilePathOnS3: ' . $artifactFilePathOnS3);
 
             if (
                 !$artifactFilePathOnS3 || !$s3Disk?->exists($artifactFilePathOnS3)
             ) {
+                stdoutLog(__FILE__ . ':' . __LINE__);
+
                 return jsonResponse([
                     'message' => 'Invalid or not found artifactFilePathOnS3.',
                     'artifactFilePathOnS3' => $artifactFilePathOnS3,
@@ -94,6 +103,8 @@ function handler(array $event): string
             }
 
             try {
+                stdoutLog(__FILE__ . ':' . __LINE__);
+
                 $localArtifactFilePath = Storage::disk('tmp')?->path(str()->random(15) . '.php');
                 $content = $s3Disk?->get($artifactFilePathOnS3);
 
@@ -103,6 +114,8 @@ function handler(array $event): string
                         $content
                     )
                 ) {
+                    stdoutLog(__FILE__ . ':' . __LINE__);
+
                     $message = 'Fail to [get/save] artifact file.';
 
                     return jsonResponse(compact('message'), 500);
@@ -124,9 +137,13 @@ function handler(array $event): string
         }
 
         try {
+            stdoutLog(__FILE__ . ':' . __LINE__);
+
             $localArtifactFilePath = ($localArtifactFilePath ?? null) ?: 'php-app/artifacts/main-artifact-file.php';
 
             if (!is_file($localArtifactFilePath)) {
+                stdoutLog(__FILE__ . ':' . __LINE__);
+
                 $message = 'Fail to load artifact file.';
 
                 return jsonResponse(compact('message'), 500);
@@ -139,6 +156,8 @@ function handler(array $event): string
             $result = $handler && is_a($handler, Closure::class) ? $handler($event) : null;
 
             if (is_file($localArtifactFilePath) && $localArtifactFilePath != 'php-app/artifacts/main-artifact-file.php') {
+                stdoutLog(__FILE__ . ':' . __LINE__);
+
                 unlink($localArtifactFilePath);
             }
 
@@ -155,6 +174,8 @@ function handler(array $event): string
                 ]
             );
         } catch (\Throwable $th) {
+            stdoutLog(__FILE__ . ':' . __LINE__);
+
             stdoutLog(
                 $errorMessage = spf(
                     'Error: %s %sLine: %s',
