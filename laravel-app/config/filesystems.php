@@ -79,6 +79,10 @@ return [
             'endpoint' => null, // env('AWS_ENDPOINT_IMPORT_EXPORT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT_IMPORT_EXPORT', false),
             'throw' => (bool) env('AWS_BUCKET_IMPORT_EXPORT_THROW', false),
+            'http' => [
+                'connect_timeout' => 15, // [EM TESTE] adicionado para validar teste de isoamento do lambda
+                'timeout' => 15, // [EM TESTE] adicionado para validar teste de isoamento do lambda
+            ],
         ],
 
         'import' => [
@@ -97,6 +101,10 @@ return [
                 env('IMPORT_EXPORT_S3_PREFIX', ''),
                 'export-files',
             ]), // path/to/dir
+            'http' => [
+                'connect_timeout' => 15, // [EM TESTE] adicionado para validar teste de isoamento do lambda
+                'timeout' => 15, // [EM TESTE] adicionado para validar teste de isoamento do lambda
+            ],
         ],
 
         'ie_report' => [
