@@ -10,6 +10,10 @@ $laravelPath = $laravelPath ?? __DIR__ . '/../../laravel-app';
 
 require_once $laravelPath . '/../utils/laravel-core.php';
 
+if (!defined('STDOUT')) {
+    define('STDOUT', fopen('php://stdout', 'r'));
+}
+
 if (!function_exists('printLine')) {
     /**
      * function printLine
@@ -133,5 +137,19 @@ if (!function_exists('jsonResponse')) {
             'headers' => $headers,
             'body' => $bodyIsJson ? json_decode($body) : $body,
         ]);
+    }
+}
+
+if (!function_exists('stdoutLog')) {
+    /**
+     * function stdoutLog
+     *
+     * @param mixed ...$content
+     *
+     * @return void
+     */
+    function stdoutLog(mixed ...$content): void
+    {
+        fwrite(STDOUT, print_r($content, true) . PHP_EOL);
     }
 }

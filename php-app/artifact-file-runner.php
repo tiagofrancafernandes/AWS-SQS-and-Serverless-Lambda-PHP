@@ -25,13 +25,28 @@ function handler(array $event): string
         return jsonResponse(['finishedOn' => date('c')]);
     }
 
-    echo __FILE__ . ':' . __LINE__ . PHP_EOL;
+    stdoutLog(__FILE__ . ':' . __LINE__ . PHP_EOL);
 
     try {
-        echo __FILE__ . ':' . __LINE__ . PHP_EOL;
-        var_export(config('import-export.export.target_disk') == 'export') . PHP_EOL;
+        stdoutLog(__FILE__ . ':' . __LINE__);
+        stdoutLog(config('import-export.export.target_disk') == 'export');
 
-        Storage::disk('export')->put('teste-lambda-runtime', date('c')); // TODO: remover [é para teste S3]
+        try {
+            Storage::disk('export')->put('teste-lambda-runtime', date('c')); // TODO: remover [é para teste S3]
+        } catch (\Throwable $th) {
+            stdoutLog(
+                $errorMessage = spf(
+                    'Error: %s %sLine: %s',
+                    $th->getLine(),
+                    PHP_EOL,
+                    $th->getMessage(),
+                )
+            );
+
+            return jsonResponse([
+                'error' => $errorMessage ?? null,
+            ], 422);
+        }
 
         $record = $event['Records'][0] ?? [];
         $messageAttributes = recordAttributes($record);
@@ -39,13 +54,29 @@ function handler(array $event): string
         if (!$messageAttributes) {
             return jsonResponse([
                 'error' => 'Empty [messageAttributes].'
-            ]);
+            ], 422);
         }
 
-        /**
-         * @var \Illuminate\Contracts\Filesystem\Filesystem $s3Disk
-         */
-        $s3Disk = Storage::disk(config('import-export.export.target_disk'));
+
+        try {
+            /**
+             * @var \Illuminate\Contracts\Filesystem\Filesystem $s3Disk
+             */
+            $s3Disk = Storage::disk(config('import-export.export.target_disk'));
+        } catch (\Throwable $th) {
+            stdoutLog(
+                $errorMessage = spf(
+                    'Error: %s %sLine: %s',
+                    $th->getLine(),
+                    PHP_EOL,
+                    $th->getMessage(),
+                )
+            );
+
+            return jsonResponse([
+                'error' => $errorMessage ?? null,
+            ], 422);
+        }
 
         $artifactFilePathOnS3 = recordAttribute($record, 'artifactFilePathOnS3')
             ?? env('ARTIFACT_FILE_PATH_ON_S3');
@@ -62,50 +93,81 @@ function handler(array $event): string
                 ], 500);
             }
 
-            $localArtifactFilePath = Storage::disk('tmp')?->path(str()->random(15) . '.php');
+            try {
+                $localArtifactFilePath = Storage::disk('tmp')?->path(str()->random(15) . '.php');
+                $content = $s3Disk?->get($artifactFilePathOnS3);
 
-            $content = $s3Disk?->get($artifactFilePathOnS3);
+                if (
+                    !$content || !file_put_contents(
+                        $localArtifactFilePath,
+                        $content
+                    )
+                ) {
+                    $message = 'Fail to [get/save] artifact file.';
 
-            if (
-                !$content || !file_put_contents(
-                    $localArtifactFilePath,
-                    $content
-                )
-            ) {
-                $message = 'Fail to [get/save] artifact file.';
+                    return jsonResponse(compact('message'), 500);
+                }
+            } catch (\Throwable $th) {
+                stdoutLog(
+                    $errorMessage = spf(
+                        'Error: %s %sLine: %s',
+                        $th->getLine(),
+                        PHP_EOL,
+                        $th->getMessage(),
+                    )
+                );
 
-                return jsonResponse(compact('message'), 500);
+                return jsonResponse([
+                    'error' => $errorMessage ?? null,
+                ], 422);
             }
         }
 
-        $localArtifactFilePath = ($localArtifactFilePath ?? null) ?: 'php-app/artifacts/main-artifact-file.php';
+        try {
+            $localArtifactFilePath = ($localArtifactFilePath ?? null) ?: 'php-app/artifacts/main-artifact-file.php';
 
-        if (!is_file($localArtifactFilePath)) {
-            $message = 'Fail to load artifact file.';
+            if (!is_file($localArtifactFilePath)) {
+                $message = 'Fail to load artifact file.';
 
-            return jsonResponse(compact('message'), 500);
+                return jsonResponse(compact('message'), 500);
+            }
+
+            $laravelPath = __DIR__ . '/../laravel-app/';
+
+            $handler = include $localArtifactFilePath;
+
+            $result = $handler && is_a($handler, Closure::class) ? $handler($event) : null;
+
+            if (is_file($localArtifactFilePath) && $localArtifactFilePath != 'php-app/artifacts/main-artifact-file.php') {
+                unlink($localArtifactFilePath);
+            }
+
+            $result = ($result ?? null) ?: 'empty-result';
+
+            return jsonResponse(
+                [
+                    'result' => ArrayHelpers::stringToArray($result) ?: $result,
+                    'artifactFilePathOnS3' => $artifactFilePathOnS3,
+                    'php_version' => PHP_VERSION,
+                    '__FILE__' => __FILE__ . ':' . __LINE__,
+                    '__FUNCTION__' => __FUNCTION__,
+                    'event' => $event,
+                ]
+            );
+        } catch (\Throwable $th) {
+            stdoutLog(
+                $errorMessage = spf(
+                    'Error: %s %sLine: %s',
+                    $th->getLine(),
+                    PHP_EOL,
+                    $th->getMessage(),
+                )
+            );
+
+            return jsonResponse([
+                'error' => $errorMessage ?? null,
+            ], 422);
         }
-
-        $laravelPath = __DIR__ . '/../laravel-app/';
-
-        $handler = include $localArtifactFilePath;
-
-        $result = $handler && is_a($handler, Closure::class) ? $handler($event) : null;
-
-        is_file($localArtifactFilePath) && unlink($localArtifactFilePath);
-
-        $result = ($result ?? null) ?: 'empty-result';
-
-        return jsonResponse(
-            [
-                'result' => ArrayHelpers::stringToArray($result) ?: $result,
-                'artifactFilePathOnS3' => $artifactFilePathOnS3,
-                'php_version' => PHP_VERSION,
-                '__FILE__' => __FILE__ . ':' . __LINE__,
-                '__FUNCTION__' => __FUNCTION__,
-                'event' => $event,
-            ]
-        );
     } catch (\Throwable $th) {
         return jsonResponse([
             'error' => 'Falha em ' . $th->getFile() . ':' . $th->getLine(),
