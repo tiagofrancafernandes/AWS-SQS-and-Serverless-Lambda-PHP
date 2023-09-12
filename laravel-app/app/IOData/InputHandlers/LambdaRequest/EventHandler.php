@@ -235,6 +235,11 @@ class EventHandler
                 ? __($successBody, ['type' => $translatedType], 'pt_BR')
                 : __($failBody, ['type' => $translatedType], 'pt_BR');
 
+            fwrite(STDOUT, print_r([
+                'callbackUrl' => $callbackUrl,
+                'currentFileAndLine' => currentFileAndLine(true),
+            ], true) . PHP_EOL);
+
             return Http::withHeaders([
                 'Content-Type' => 'application/json; charset=utf-8',
             ])->asJson()->post($callbackUrl, [

@@ -112,8 +112,8 @@ class RawQueryExporter extends Exporter
             \Log::error($th);
 
             print_r([
-                'error_line' => $th->getLine(),
                 'error' => $th->getMessage(),
+                'error_line' => $th->getLine(),
                 'line' => __FILE__ . ':' . __LINE__,
             ]);
 

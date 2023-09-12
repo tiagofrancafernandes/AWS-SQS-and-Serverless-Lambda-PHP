@@ -39,9 +39,9 @@ function handler(array $event): string
             stdoutLog(
                 $errorMessage = spf(
                     'Error: %s %sLine: %s',
-                    $th->getLine(),
-                    PHP_EOL,
                     $th->getMessage(),
+                    PHP_EOL,
+                    $th->getLine(),
                 )
             );
 
@@ -70,9 +70,9 @@ function handler(array $event): string
             stdoutLog(
                 $errorMessage = spf(
                     'Error: %s %sLine: %s',
-                    $th->getLine(),
-                    PHP_EOL,
                     $th->getMessage(),
+                    PHP_EOL,
+                    $th->getLine(),
                 )
             );
 
@@ -124,9 +124,9 @@ function handler(array $event): string
                 stdoutLog(
                     $errorMessage = spf(
                         'Error: %s %sLine: %s',
-                        $th->getLine(),
-                        PHP_EOL,
                         $th->getMessage(),
+                        PHP_EOL,
+                        $th->getLine(),
                     )
                 );
 
@@ -179,9 +179,9 @@ function handler(array $event): string
             stdoutLog(
                 $errorMessage = spf(
                     'Error: %s %sLine: %s',
-                    $th->getLine(),
-                    PHP_EOL,
                     $th->getMessage(),
+                    PHP_EOL,
+                    $th->getLine(),
                 )
             );
 
