@@ -100,7 +100,11 @@ class EventHandler
         $resource = EventHandler::getMessageAttribute($messageAttributes, 'resource');
         $mappedColumns = EventHandler::getMessageAttribute($messageAttributes, 'mappedColumns', stringToArray: true);
         $modifiers = EventHandler::getMessageAttribute($messageAttributes, 'modifiers', stringToArray: true);
-        $callbackUrl = EventHandler::getMessageAttribute($messageAttributes, 'callbackUrl');
+        // $callbackUrl = EventHandler::getMessageAttribute($messageAttributes, 'callbackUrl');
+        $callbackUrl = env('COMPTRADE_FORCED_CALLBACK_URL') ?: EventHandler::getMessageAttribute(
+            $messageAttributes,
+            'callbackUrl',
+        );
 
         $validatedData = static::validateRecord([
             'requestType' => $requestType,
