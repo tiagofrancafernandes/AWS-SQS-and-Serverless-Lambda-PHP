@@ -283,6 +283,15 @@ class RequestInfo
         return $this->requestModelGet('sqs_message_attributes') ?: null;
     }
 
+    public function getSqsMessageAttribute(string $attribute, bool $stringToArray = false): mixed
+    {
+        return Arr::wrap(EventHandler::getMessageAttribute(
+            ($this->getSqsMessageAttributes()?->toArray() ?? []),
+            $attribute,
+            $stringToArray
+        ));
+    }
+
     public function getFilamentColumns(): array
     {
         return Arr::wrap(EventHandler::getMessageAttribute(

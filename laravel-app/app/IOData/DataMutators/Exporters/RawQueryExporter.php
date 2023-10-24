@@ -80,6 +80,9 @@ class RawQueryExporter extends Exporter
                 throw new \Exception('Empty "fileExcelWriter"', 1);
             }
 
+            // Útil para geração da planilha modelo
+            $blankExcel = filter_var($this->requestInfo?->getSqsMessageAttribute('blankExcel'), FILTER_VALIDATE_BOOL);
+
             $filamentColumns = collect($this->requestInfo?->getFilamentColumns())
                 ->filter(fn ($item) => isset($item['name']))
                 ->mapWithKeys(function ($value) {
@@ -146,10 +149,15 @@ class RawQueryExporter extends Exporter
                     continue;
                 }
 
+                // Útil para geração da planilha modelo
+                if ($blankExcel) {
+                    continue;
+                }
+
                 $this->fileExcelWriter->addRow(static::validRow((array) $modifiedRecord), $rowStyle);
             }
 
-            echo 'Used memory: ' . (memory_get_peak_usage(true) / 1024 / 1024) . PHP_EOL;
+            info('Used memory: ', [(memory_get_peak_usage(true) / 1024 / 1024)]);
 
             // $failStyle = static::getStyle('fail', $rowStyle);
         } catch (\Throwable $th) {
