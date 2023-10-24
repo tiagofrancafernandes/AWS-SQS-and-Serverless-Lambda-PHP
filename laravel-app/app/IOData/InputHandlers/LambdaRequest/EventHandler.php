@@ -39,7 +39,9 @@ class EventHandler
      *
      * @param array $messageAttributes
      * @param string $key
+     * @param ?string $alterKey
      * @param mixed $defaultValue
+     * @param bool $stringToArray  Useful when string are json
      *
      * @return mixed
      */
@@ -97,8 +99,10 @@ class EventHandler
         $user_id_type = EventHandler::getMessageAttribute($messageAttributes, 'user_id_type');
         $user_id = EventHandler::getMessageAttribute($messageAttributes, 'user_id');
         $tenant_id = EventHandler::getMessageAttribute($messageAttributes, 'tenant_id');
+        $importExportRequestUuid = EventHandler::getMessageAttribute($messageAttributes, 'import_export_request_uuid');
         $resource = EventHandler::getMessageAttribute($messageAttributes, 'resource');
         $mappedColumns = EventHandler::getMessageAttribute($messageAttributes, 'mappedColumns', stringToArray: true);
+        $filamentColumns = EventHandler::getMessageAttribute($messageAttributes, 'filamentColumns', stringToArray: true);
         $modifiers = EventHandler::getMessageAttribute($messageAttributes, 'modifiers', stringToArray: true);
         // $callbackUrl = EventHandler::getMessageAttribute($messageAttributes, 'callbackUrl');
         $callbackUrl = env('COMPTRADE_FORCED_CALLBACK_URL') ?: EventHandler::getMessageAttribute(
@@ -113,8 +117,10 @@ class EventHandler
             'tenant_id' => $tenant_id,
             'resource' => $resource,
             'mappedColumns' => $mappedColumns,
+            'filamentColumns' => $filamentColumns,
             'modifiers' => $modifiers,
             'callbackUrl' => $callbackUrl,
+            'import_export_request_uuid' => $importExportRequestUuid,
         ]);
 
         if ($validatedData['error'] ?? null) {
@@ -165,7 +171,9 @@ class EventHandler
                 'resource' => 'required|string|in:' . implode(',', array_keys(ResourceManager::resourceList())),
                 'mappedColumns' => 'array',
                 'modifiers' => 'array',
+                'filamentColumns' => 'array',
                 'callbackUrl' => 'required|url',
+                'import_export_request_uuid' => 'nullable',
             ]);
 
             $validator->validate();
@@ -202,6 +210,7 @@ class EventHandler
             $resource = $data?->get('resource');
             $mappedColumns = $data?->get('mappedColumns');
             $modifiers = $data?->get('modifiers');
+            $importExportRequestUuid = $data?->get('import_export_request_uuid');
 
             $processResult = new Fluent($data->get('processResult', []));
 
@@ -295,7 +304,11 @@ class EventHandler
                     'exportFileUrl' => [
                         'DataType' => 'String',
                         'StringValue' => $processResult?->final_file_url
-                    ]
+                    ],
+                    'import_export_request_uuid' => [
+                        'DataType' => 'String',
+                        'StringValue' => $importExportRequestUuid,
+                    ],
                 ]
             ]);
         } catch (\Throwable $th) {

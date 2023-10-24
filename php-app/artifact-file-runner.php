@@ -34,7 +34,7 @@ function handler(array $event): string
         stdoutLog(config('import-export.export.target_disk') == 'export');
 
         try {
-            Storage::disk('export')->put('teste-lambda-runtime', date('c')); // TODO: remover [é para teste S3]
+            Storage::disk('export')->put('ping-lambda-runtime', date('c')); // TODO: remover [é para teste S3]
         } catch (\Throwable $th) {
             stdoutLog(
                 $errorMessage = spf(

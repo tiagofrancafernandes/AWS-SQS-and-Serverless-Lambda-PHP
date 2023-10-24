@@ -11,6 +11,8 @@ use App\Models\Interfaces\RequestModel;
 use Illuminate\Support\Facades\Storage;
 use App\IOData\DataMutators\Enums\RequestTypeEnum;
 use App\IOData\DataMutators\Resources\ResourceManager;
+use App\IOData\InputHandlers\LambdaRequest\EventHandler;
+use Illuminate\Support\Arr;
 
 class RequestInfo
 {
@@ -157,13 +159,15 @@ class RequestInfo
             [
                 $this->getRequestDate()?->format('Y-m-d-His'),
                 $this->getTenantId(),
-                $this->getResourceName(),
                 $this->getType(),
                 md5(
                     implode(
                         '-',
                         array_filter(
-                            $this->getFilters(),
+                            [
+                                $this->getResourceName(),
+                                ...$this->getFilters(),
+                            ],
                             fn ($item) => $item && is_string($item) && trim($item)
                         )
                     )
@@ -272,6 +276,20 @@ class RequestInfo
     public function getStatus(): ?int
     {
         return $this->requestModelGet('final_status') ?: $this->requestModelGet('status');
+    }
+
+    public function getSqsMessageAttributes(): ?Collection
+    {
+        return $this->requestModelGet('sqs_message_attributes') ?: null;
+    }
+
+    public function getFilamentColumns(): array
+    {
+        return Arr::wrap(EventHandler::getMessageAttribute(
+            ($this->getSqsMessageAttributes()?->toArray() ?? []),
+            'filamentColumns',
+            stringToArray: true
+        ));
     }
 
     public function wasFinished(): bool

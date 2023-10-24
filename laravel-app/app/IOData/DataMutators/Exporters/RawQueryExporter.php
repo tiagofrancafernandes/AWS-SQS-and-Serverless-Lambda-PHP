@@ -15,7 +15,15 @@ use Illuminate\Contracts\Support\Arrayable;
 use OpenSpout\Common\Entity\Style\BorderPart;
 use OpenSpout\Common\Entity\Style\CellAlignment;
 use App\IOData\DataMutators\RequestInfo\RequestInfo;
+use Spatie\SimpleExcel\SimpleExcelWriter;
+use App\Macroables\MacroableCollection;
+use App\Helpers\DateForSearchFieldHelper;
+use App\Helpers\TrueOrFalseHelper;
 
+/**
+ * @property ?SimpleExcelWriter $fileExcelWriter
+ * @inheritDoc
+ */
 class RawQueryExporter extends Exporter
 {
     protected ?Tenant $tenant = null;
@@ -72,6 +80,15 @@ class RawQueryExporter extends Exporter
                 throw new \Exception('Empty "fileExcelWriter"', 1);
             }
 
+            $filamentColumns = collect($this->requestInfo?->getFilamentColumns())
+                ->filter(fn ($item) => isset($item['name']))
+                ->mapWithKeys(function ($value) {
+                    $key = is_string($value['dbColumn'] ?? null) ? trim($value['dbColumn']) : ($value['name'] ?? null);
+                    return ["{$key}" => $value];
+                });
+
+            $filamentColumns->macro(...MacroableCollection::dotGet());
+
             $mappedColumns = static::stringKeys($this->requestInfo?->getMappedColumns() ?? []);
             $rawQueryData = $this->requestInfo?->getModifiers()['rawQuery'] ?? null;
             $rawSql = trim(strval($rawQueryData['sql'] ?? null));
@@ -84,15 +101,42 @@ class RawQueryExporter extends Exporter
             $rowStyle = static::getRowStyle();
             $addedHeaders = false;
 
-            foreach (DB::cursor( $rawSql, $rawSqlBindings ) as $record) {
+            foreach (DB::cursor($rawSql, $rawSqlBindings) as $record) {
                 $modifiedRecord = [];
-                collect($record)->each(function ($value, $key) use ($mappedColumns, &$modifiedRecord) {
-                    $newKey = $key && is_string($key) ? $mappedColumns[$key] ?? $key : $key;
+                collect($record)->each(function ($value, $key) use (
+                    $mappedColumns,
+                    &$modifiedRecord,
+                    $filamentColumns,
+                ) {
+                    if (!filled($key) || !is_string($key)) {
+                        return;
+                    }
 
-                    $modifiedRecord[$newKey] = static::castFormater($value);
+                    $filamentColumnInfo = $filamentColumns?->get($key) ?: static::getColunmDefaultSettings($key);
+
+                    if (!$filamentColumnInfo) {
+                        return;
+                    }
+
+                    $formatLabel = $filamentColumnInfo['formatLabel'] ?? null;
+                    $formatValue = $filamentColumnInfo['formatValue'] ?? null;
+
+                    $label = $filamentColumnInfo['label'] ?? null;
+
+                    $newKey = is_callable($formatLabel) ? call_user_func($formatLabel, $label) : $label;
+
+                    if (!$newKey) {
+                        return;
+                    }
+
+                    $modifiedRecord[$newKey] = is_callable($formatValue)
+                        ? call_user_func($formatValue, $value)
+                        : static::castFormater($value);
                 });
 
                 if (!$addedHeaders) {
+                    info('Excel headers', array_keys($modifiedRecord));
+
                     $this->fileExcelWriter->addHeader(array_keys($modifiedRecord));
 
                     $addedHeaders = true;
@@ -138,7 +182,9 @@ class RawQueryExporter extends Exporter
 
     public function getQuery(): \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder
     {
-        return DB::table('products');
+        // // Exemplo
+        // return DB::table('products');
+        return DB::query();
     }
 
     public static function getAllowedColumns(): array
@@ -149,5 +195,39 @@ class RawQueryExporter extends Exporter
     public static function getRelationshipData(?string $relationship = null): null|string|Closure
     {
         return null;
+    }
+
+    /**
+     * getColunmDefaultSettings function
+     *
+     * @param string $column
+     * @return array
+     */
+    public static function getColunmDefaultSettings($column): array
+    {
+        if (!is_string($column)) {
+            return [];
+        }
+
+        return match (strtolower($column)) {
+            'ativo_coluna_virtual',  'ativo coluna virtual',
+            'ativo_coluna_ativo', 'ativo coluna ativo',
+            'ativo', 'deleted_at', 'deleted at',
+            'active', 'is_active', 'is active', => [ // Coluna deleted_at
+                'name' => 'deleted_at',
+                'label' => 'Ativo',
+                'dbColumn' => 'deleted_at',
+                'formatLabel' => ['Str', 'headline'],
+                'formatValue' => function ($value = null) {
+                    $value = trim("{$value}");
+                    $deleted = boolval(
+                        DateForSearchFieldHelper::get($value) ?: TrueOrFalseHelper::trueOrFalse($value)
+                    );
+
+                    return $deleted ? 0 : 1;
+                },
+            ],
+            default => [],
+        };
     }
 }
