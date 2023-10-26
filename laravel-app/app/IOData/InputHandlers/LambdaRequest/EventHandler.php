@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Client\PendingRequest;
 use App\IOData\DataMutators\RequestInfo\RequestInfo;
 use App\IOData\DataMutators\Resources\ResourceManager;
+use Illuminate\Support\Arr;
 
 class EventHandler
 {
@@ -102,7 +103,9 @@ class EventHandler
         $importExportRequestUuid = EventHandler::getMessageAttribute($messageAttributes, 'import_export_request_uuid');
         $resource = EventHandler::getMessageAttribute($messageAttributes, 'resource');
         $mappedColumns = EventHandler::getMessageAttribute($messageAttributes, 'mappedColumns', stringToArray: true);
-        $filamentColumns = EventHandler::getMessageAttribute($messageAttributes, 'filamentColumns', stringToArray: true);
+        $filamentColumns = Arr::wrap(
+            EventHandler::getMessageAttribute($messageAttributes, 'filamentColumns', stringToArray: true)
+        );
         $modifiers = EventHandler::getMessageAttribute($messageAttributes, 'modifiers', stringToArray: true);
         // $callbackUrl = EventHandler::getMessageAttribute($messageAttributes, 'callbackUrl');
         $callbackUrl = env('COMPTRADE_FORCED_CALLBACK_URL') ?: EventHandler::getMessageAttribute(
@@ -171,7 +174,7 @@ class EventHandler
                 'resource' => 'required|string|in:' . implode(',', array_keys(ResourceManager::resourceList())),
                 'mappedColumns' => 'array',
                 'modifiers' => 'array',
-                'filamentColumns' => 'array',
+                'filamentColumns' => 'nullable|array',
                 'callbackUrl' => 'required|url',
                 'import_export_request_uuid' => 'nullable',
             ]);
